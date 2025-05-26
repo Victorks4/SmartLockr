@@ -1,26 +1,231 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smart-room-guardian</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-
-    <meta property="og:title" content="smart-room-guardian" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <title>Smart Lock IoT Control</title>
+    <meta name="description" content="Smart Lock RFID Control Dashboard" />
+    <meta name="author" content="Smart Lock IoT System" />
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
   </head>
 
   <body>
-    <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
-    <script type="module" src="/src/main.tsx"></script>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <i class="bi bi-shield-lock-fill me-2"></i>
+          Smart Lock Control
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="#dashboard">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#activity">Activity</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#settings">Settings</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+      <!-- Status Cards -->
+      <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+          <div class="card status-card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+              <div class="status-icon text-success mb-2">
+                <i class="bi bi-door-open-fill"></i>
+              </div>
+              <h5 class="card-title">Room Status</h5>
+              <p class="card-text" id="roomStatus">Unlocked</p>
+              <small class="text-muted" id="lastAccess">Last access: 2 min ago</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+          <div class="card status-card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+              <div class="status-icon text-primary mb-2">
+                <i class="bi bi-credit-card-2-front-fill"></i>
+              </div>
+              <h5 class="card-title">Active Tags</h5>
+              <p class="card-text" id="activeTags">7</p>
+              <small class="text-muted">Registered RFID tags</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+          <div class="card status-card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+              <div class="status-icon text-warning mb-2">
+                <i class="bi bi-clock-fill"></i>
+              </div>
+              <h5 class="card-title">Today's Access</h5>
+              <p class="card-text" id="todayAccess">12</p>
+              <small class="text-muted">Total entries today</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+          <div class="card status-card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+              <div class="status-icon text-info mb-2">
+                <i class="bi bi-wifi"></i>
+              </div>
+              <h5 class="card-title">Connection</h5>
+              <p class="card-text" id="connectionStatus">Online</p>
+              <small class="text-muted">IoT device status</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Dashboard -->
+      <div class="row">
+        <!-- Activity Feed -->
+        <div class="col-lg-8 mb-4">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="bi bi-activity me-2"></i>
+                Recent Activity
+              </h5>
+              <button class="btn btn-outline-primary btn-sm" onclick="clearActivity()">
+                <i class="bi bi-trash3"></i> Clear
+              </button>
+            </div>
+            <div class="card-body">
+              <div id="activityFeed" class="activity-feed">
+                <!-- Activity items will be populated by JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room Controls -->
+        <div class="col-lg-4 mb-4">
+          <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">
+                <i class="bi bi-gear-fill me-2"></i>
+                Room Controls
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="d-grid gap-2">
+                <button class="btn btn-success" onclick="toggleLock()" id="lockBtn">
+                  <i class="bi bi-unlock-fill me-2"></i>
+                  Lock Room
+                </button>
+                <button class="btn btn-warning" onclick="registerTag()">
+                  <i class="bi bi-plus-circle-fill me-2"></i>
+                  Register New Tag
+                </button>
+                <button class="btn btn-info" onclick="viewLogs()">
+                  <i class="bi bi-journal-text me-2"></i>
+                  View Full Logs
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">
+                <i class="bi bi-graph-up me-2"></i>
+                Quick Stats
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="stat-item mb-3">
+                <div class="d-flex justify-content-between">
+                  <span>This Hour</span>
+                  <strong id="hourlyAccess">3</strong>
+                </div>
+                <div class="progress mt-1" style="height: 4px;">
+                  <div class="progress-bar" style="width: 30%"></div>
+                </div>
+              </div>
+              <div class="stat-item mb-3">
+                <div class="d-flex justify-content-between">
+                  <span>This Week</span>
+                  <strong id="weeklyAccess">47</strong>
+                </div>
+                <div class="progress mt-1" style="height: 4px;">
+                  <div class="progress-bar bg-success" style="width: 70%"></div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="d-flex justify-content-between">
+                  <span>Failed Attempts</span>
+                  <strong class="text-danger" id="failedAttempts">2</strong>
+                </div>
+                <div class="progress mt-1" style="height: 4px;">
+                  <div class="progress-bar bg-danger" style="width: 10%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registered Tags -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+              <h5 class="mb-0">
+                <i class="bi bi-credit-card me-2"></i>
+                Registered RFID Tags
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Tag ID</th>
+                      <th>User Name</th>
+                      <th>Last Used</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tagsTable">
+                    <!-- Tags will be populated by JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="script.js"></script>
   </body>
 </html>

@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Lock IoT Control</title>
-    <meta name="description" content="Smart Lock RFID Control Dashboard" />
-    <meta name="author" content="Smart Lock IoT System" />
+    <title>Controle Inteligente de Fechadura</title>
+    <meta name="description" content="Painel de Controle RFID para Fechadura Inteligente" />
+    <meta name="author" content="Sistema IoT de Fechadura Inteligente" />
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -22,7 +22,7 @@
       <div class="container">
         <a class="navbar-brand" href="#">
           <i class="bi bi-shield-lock-fill me-2"></i>
-          Smart Lock Control
+          Controle de Fechadura Inteligente
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
@@ -30,13 +30,13 @@
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
             <li class="nav-item">
-              <a class="nav-link active" href="#dashboard">Dashboard</a>
+              <a class="nav-link active" href="#dashboard">Painel</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#activity">Activity</a>
+              <a class="nav-link" href="#activity">Atividade</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#settings">Settings</a>
+              <a class="nav-link" href="#settings">Configurações</a>
             </li>
           </ul>
         </div>
@@ -53,9 +53,9 @@
               <div class="status-icon text-success mb-2">
                 <i class="bi bi-door-open-fill"></i>
               </div>
-              <h5 class="card-title">Room Status</h5>
-              <p class="card-text" id="roomStatus">Unlocked</p>
-              <small class="text-muted" id="lastAccess">Last access: 2 min ago</small>
+              <h5 class="card-title">Status da Sala</h5>
+              <p class="card-text" id="roomStatus">Desbloqueada</p>
+              <small class="text-muted" id="lastAccess">Último acesso: 2 min atrás</small>
             </div>
           </div>
         </div>
@@ -66,9 +66,9 @@
               <div class="status-icon text-primary mb-2">
                 <i class="bi bi-credit-card-2-front-fill"></i>
               </div>
-              <h5 class="card-title">Active Tags</h5>
+              <h5 class="card-title">Tags Ativas</h5>
               <p class="card-text" id="activeTags">7</p>
-              <small class="text-muted">Registered RFID tags</small>
+              <small class="text-muted">Tags RFID registradas</small>
             </div>
           </div>
         </div>
@@ -79,9 +79,9 @@
               <div class="status-icon text-warning mb-2">
                 <i class="bi bi-clock-fill"></i>
               </div>
-              <h5 class="card-title">Today's Access</h5>
+              <h5 class="card-title">Acessos Hoje</h5>
               <p class="card-text" id="todayAccess">12</p>
-              <small class="text-muted">Total entries today</small>
+              <small class="text-muted">Total de entradas hoje</small>
             </div>
           </div>
         </div>
@@ -92,9 +92,9 @@
               <div class="status-icon text-info mb-2">
                 <i class="bi bi-wifi"></i>
               </div>
-              <h5 class="card-title">Connection</h5>
+              <h5 class="card-title">Conexão</h5>
               <p class="card-text" id="connectionStatus">Online</p>
-              <small class="text-muted">IoT device status</small>
+              <small class="text-muted">Status do dispositivo IoT</small>
             </div>
           </div>
         </div>
@@ -108,10 +108,10 @@
             <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
               <h5 class="mb-0">
                 <i class="bi bi-activity me-2"></i>
-                Recent Activity
+                Atividade Recente
               </h5>
               <button class="btn btn-outline-primary btn-sm" onclick="clearActivity()">
-                <i class="bi bi-trash3"></i> Clear
+                <i class="bi bi-trash3"></i> Limpar
               </button>
             </div>
             <div class="card-body">
@@ -128,22 +128,22 @@
             <div class="card-header bg-white border-0">
               <h5 class="mb-0">
                 <i class="bi bi-gear-fill me-2"></i>
-                Room Controls
+                Controles da Sala
               </h5>
             </div>
             <div class="card-body">
               <div class="d-grid gap-2">
                 <button class="btn btn-success" onclick="toggleLock()" id="lockBtn">
                   <i class="bi bi-unlock-fill me-2"></i>
-                  Lock Room
+                  Trancar Sala
                 </button>
                 <button class="btn btn-warning" onclick="registerTag()">
                   <i class="bi bi-plus-circle-fill me-2"></i>
-                  Register New Tag
+                  Registrar Nova Tag
                 </button>
                 <button class="btn btn-info" onclick="viewLogs()">
                   <i class="bi bi-journal-text me-2"></i>
-                  View Full Logs
+                  Ver Logs Completos
                 </button>
               </div>
             </div>
@@ -154,13 +154,13 @@
             <div class="card-header bg-white border-0">
               <h5 class="mb-0">
                 <i class="bi bi-graph-up me-2"></i>
-                Quick Stats
+                Estatísticas Rápidas
               </h5>
             </div>
             <div class="card-body">
               <div class="stat-item mb-3">
                 <div class="d-flex justify-content-between">
-                  <span>This Hour</span>
+                  <span>Esta Hora</span>
                   <strong id="hourlyAccess">3</strong>
                 </div>
                 <div class="progress mt-1" style="height: 4px;">
@@ -169,7 +169,7 @@
               </div>
               <div class="stat-item mb-3">
                 <div class="d-flex justify-content-between">
-                  <span>This Week</span>
+                  <span>Esta Semana</span>
                   <strong id="weeklyAccess">47</strong>
                 </div>
                 <div class="progress mt-1" style="height: 4px;">
@@ -178,7 +178,7 @@
               </div>
               <div class="stat-item">
                 <div class="d-flex justify-content-between">
-                  <span>Failed Attempts</span>
+                  <span>Tentativas Falhadas</span>
                   <strong class="text-danger" id="failedAttempts">2</strong>
                 </div>
                 <div class="progress mt-1" style="height: 4px;">
@@ -197,7 +197,7 @@
             <div class="card-header bg-white border-0">
               <h5 class="mb-0">
                 <i class="bi bi-credit-card me-2"></i>
-                Registered RFID Tags
+                Tags RFID Registradas
               </h5>
             </div>
             <div class="card-body">
@@ -205,11 +205,11 @@
                 <table class="table table-hover">
                   <thead class="table-light">
                     <tr>
-                      <th>Tag ID</th>
-                      <th>User Name</th>
-                      <th>Last Used</th>
+                      <th>ID da Tag</th>
+                      <th>Nome do Usuário</th>
+                      <th>Último Uso</th>
                       <th>Status</th>
-                      <th>Actions</th>
+                      <th>Ações</th>
                     </tr>
                   </thead>
                   <tbody id="tagsTable">

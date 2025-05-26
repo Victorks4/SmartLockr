@@ -1,0 +1,71 @@
+
+/* Card Components */
+
+/* Main Cards */
+.card {
+  border-radius: 20px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.9) 0%, rgba(75, 29, 149, 0.3) 100%);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+  transition: all 0.3s ease;
+  color: var(--light-color);
+}
+
+.card:hover {
+  box-shadow: 0 15px 40px rgba(139, 92, 246, 0.3);
+  border-color: rgba(217, 70, 239, 0.5);
+}
+
+.card-header {
+  border-radius: 20px 20px 0 0 !important;
+  padding: 1.5rem;
+  font-weight: 600;
+  background: var(--gradient-primary) !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+  color: white !important;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Status Cards */
+.status-card {
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.8) 0%, rgba(139, 92, 246, 0.1) 100%);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+}
+
+.status-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 15px 40px rgba(139, 92, 246, 0.3);
+  border-color: var(--neon-purple);
+}
+
+.status-icon {
+  font-size: 2.8rem;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 0 10px currentColor);
+}
+
+.status-icon i {
+  display: block;
+}
+
+.card-title {
+  font-weight: 600;
+  color: var(--light-color);
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+}
+
+.card-text {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

@@ -1,0 +1,51 @@
+
+/* Base Layout and Typography */
+
+body {
+  background: var(--bg-gradient);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  color: var(--light-color);
+}
+
+/* Text Colors */
+.text-success {
+  color: var(--success-color) !important;
+}
+
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.text-warning {
+  color: var(--warning-color) !important;
+}
+
+.text-info {
+  color: var(--info-color) !important;
+}
+
+.text-danger {
+  color: var(--danger-color) !important;
+}
+
+.text-muted {
+  color: rgba(248, 250, 252, 0.6) !important;
+}
+
+/* Status indicators */
+.status-online {
+  color: var(--success-color);
+}
+
+.status-offline {
+  color: var(--danger-color);
+}
+
+.status-locked {
+  color: var(--danger-color);
+}
+
+.status-unlocked {
+  color: var(--success-color);
+}

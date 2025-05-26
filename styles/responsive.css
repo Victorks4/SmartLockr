@@ -1,0 +1,30 @@
+
+/* Responsive Design */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+  
+  .card-body {
+    padding: 1.2rem;
+  }
+  
+  .status-icon {
+    font-size: 2.2rem;
+  }
+  
+  .card-text {
+    font-size: 1.6rem;
+  }
+  
+  .activity-item {
+    padding: 12px;
+  }
+  
+  .activity-icon {
+    font-size: 1.3rem;
+    margin-right: 12px;
+    width: 35px;
+  }
+}

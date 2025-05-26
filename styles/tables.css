@@ -1,0 +1,29 @@
+
+/* Table Styles */
+
+.table {
+  margin-bottom: 0;
+  color: var(--light-color);
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: var(--light-color);
+  padding: 1.2rem 0.75rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(192, 38, 211, 0.1) 100%);
+}
+
+.table td {
+  padding: 1.2rem 0.75rem;
+  vertical-align: middle;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.table-hover tbody tr:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(192, 38, 211, 0.05) 100%);
+}
+
+.table-light {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(192, 38, 211, 0.1) 100%);
+}

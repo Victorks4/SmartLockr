@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt">
   <head>
@@ -22,6 +21,17 @@
     <link rel="stylesheet" href="styles/tables.css">
     <link rel="stylesheet" href="styles/animations.css">
     <link rel="stylesheet" href="styles/responsive.css">
+    <style>
+      .navbar-brand {
+        margin-left: -270px;
+      }
+      .navbar-nav {
+        margin-left: auto;
+        margin-right: 0;
+        position: relative;
+        left: 250px;
+      }
+    </style>
   </head>
 
   <body>
@@ -38,10 +48,10 @@
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
             <li class="nav-item">
-              <a class="nav-link active" href="#dashboard">Painel</a>
+              <a class="nav-link active" href="index.html">Painel</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#activity">Atividade</a>
+              <a class="nav-link" href="activity.html">Atividade</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#settings">Configurações</a>
@@ -53,6 +63,34 @@
 
     <!-- Main Content -->
     <div class="container mt-4">
+      <!-- Laboratory Selector -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <h5 class="mb-0 me-3">
+                  <i class="bi bi-building me-2"></i>
+                  Selecione o Laboratório:
+                </h5>
+                <select class="form-select w-auto" id="laboratorySelect" onchange="changeLaboratory()">
+                  <option value="1">Laboratório 1</option>
+                  <option value="2">Laboratório 2</option>
+                  <option value="3">Laboratório 3</option>
+                  <option value="4">Laboratório 4</option>
+                  <option value="5">Laboratório 5</option>
+                  <option value="6">Laboratório 6</option>
+                  <option value="7">Laboratório 7</option>
+                  <option value="8">Laboratório 8</option>
+                  <option value="9">Laboratório 9</option>
+                  <option value="10">Laboratório 10</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Status Cards -->
       <div class="row mb-4">
         <div class="col-md-3 mb-3">
@@ -61,8 +99,8 @@
               <div class="status-icon text-success mb-2">
                 <i class="bi bi-door-open-fill"></i>
               </div>
-              <h5 class="card-title">Status da Sala</h5>
-              <p class="card-text" id="roomStatus">Desbloqueada</p>
+              <h5 class="card-title">Status do Laboratório</h5>
+              <p class="card-text" id="roomStatus">Desbloqueado</p>
               <small class="text-muted" id="lastAccess">Último acesso: 2 min atrás</small>
             </div>
           </div>
@@ -72,11 +110,11 @@
           <div class="card status-card border-0 shadow-sm h-100">
             <div class="card-body text-center">
               <div class="status-icon text-primary mb-2">
-                <i class="bi bi-credit-card-2-front-fill"></i>
+                <i class="bi bi-person-fill"></i>
               </div>
-              <h5 class="card-title">Tags Ativas</h5>
-              <p class="card-text" id="activeTags">7</p>
-              <small class="text-muted">Tags RFID registradas</small>
+              <h5 class="card-title">Professor Responsável</h5>
+              <p class="card-text" id="currentTeacher">Não definido</p>
+              <small class="text-muted">ID RFID: <span id="currentRFID">-</span></small>
             </div>
           </div>
         </div>
@@ -118,7 +156,7 @@
                 <i class="bi bi-activity me-2"></i>
                 Atividade Recente
               </h5>
-              <button class="btn btn-outline-primary btn-sm" onclick="clearActivity()">
+              <button class="btn btn-outline-light btn-sm" onclick="clearActivity()">
                 <i class="bi bi-trash3"></i> Limpar
               </button>
             </div>
@@ -136,18 +174,18 @@
             <div class="card-header bg-white border-0">
               <h5 class="mb-0">
                 <i class="bi bi-gear-fill me-2"></i>
-                Controles da Sala
+                Controles do Laboratório
               </h5>
             </div>
             <div class="card-body">
               <div class="d-grid gap-2">
                 <button class="btn btn-success" onclick="toggleLock()" id="lockBtn">
                   <i class="bi bi-unlock-fill me-2"></i>
-                  Trancar Sala
+                  Trancar Laboratório
                 </button>
-                <button class="btn btn-warning" onclick="registerTag()">
-                  <i class="bi bi-plus-circle-fill me-2"></i>
-                  Registrar Nova Tag
+                <button class="btn btn-warning" onclick="changeTeacher()">
+                  <i class="bi bi-person-plus-fill me-2"></i>
+                  Alterar Professor
                 </button>
                 <button class="btn btn-info" onclick="viewLogs()">
                   <i class="bi bi-journal-text me-2"></i>
@@ -213,10 +251,11 @@
                 <table class="table table-hover">
                   <thead class="table-light">
                     <tr>
-                      <th>ID da Tag</th>
-                      <th>Nome do Usuário</th>
+                      <th>ID RFID</th>
+                      <th>Nome</th>
                       <th>Último Uso</th>
                       <th>Status</th>
+                      <th>Tipo</th>
                       <th>Ações</th>
                     </tr>
                   </thead>
@@ -235,5 +274,68 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="script.js"></script>
+
+    <!-- Modal de Alteração de Professor -->
+    <div class="modal fade" id="changeTeacherModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Alterar Professor Responsável</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="changeTeacherForm">
+              <div class="mb-3">
+                <label for="teacherSelect" class="form-label">Selecione o Professor</label>
+                <select class="form-select" id="teacherSelect" required onchange="updateSubjectOptions()">
+                  <option value="">Selecione um professor...</option>
+                  <option value="ICARO001">Icaro Alvim</option>
+                  <option value="MOISES001">Moises Lima</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="subjectSelect" class="form-label">Selecione a Matéria</label>
+                <select class="form-select" id="subjectSelect" required>
+                  <option value="">Selecione primeiro um professor...</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="teacherDay" class="form-label">Dia da Semana</label>
+                <select class="form-select" id="teacherDay" required>
+                  <option value="segunda">Segunda-feira</option>
+                  <option value="terca">Terça-feira</option>
+                  <option value="quarta">Quarta-feira</option>
+                  <option value="quinta">Quinta-feira</option>
+                  <option value="sexta">Sexta-feira</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="teacherShift" class="form-label">Turno</label>
+                <select class="form-select" id="teacherShift" required>
+                  <option value="manha">Manhã</option>
+                  <option value="tarde">Tarde</option>
+                  <option value="noite">Noite</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="teacherTime" class="form-label">Horário</label>
+                <select class="form-select" id="teacherTime" required>
+                  <option value="08:00 - 09:40">08:00 - 09:40</option>
+                  <option value="10:00 - 11:40">10:00 - 11:40</option>
+                  <option value="13:30 - 15:10">13:30 - 15:10</option>
+                  <option value="15:30 - 17:10">15:30 - 17:10</option>
+                  <option value="18:30 - 20:10">18:30 - 20:10</option>
+                  <option value="20:20 - 22:00">20:20 - 22:00</option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" onclick="confirmTeacherChange()">Confirmar</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

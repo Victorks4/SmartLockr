@@ -3,30 +3,177 @@
 // Global variables
 let isLocked = false;
 let activityData = [];
+let currentLaboratory = 1;
+
+// Professores e seus IDs RFID
+const teachers = {
+  'ICARO001': {
+    name: 'Icaro Alvim',
+    rfid: 'ICARO001',
+    subjects: ['Internet das Coisas', 'Programação de Apps', 'Análise de Dados']
+  },
+  'MOISES001': {
+    name: 'Moises Lima',
+    rfid: 'MOISES001',
+    subjects: ['Banco de Dados', 'Desenvolvimento de Sistemas', 'Lógica de Programação']
+  }
+};
+
+// Tags registradas (incluindo professores)
 let registeredTags = [
-  { id: 'RFID001', name: 'John Doe', lastUsed: '2024-05-26 09:30', status: 'Active' },
-  { id: 'RFID002', name: 'Jane Smith', lastUsed: '2024-05-26 08:15', status: 'Active' },
-  { id: 'RFID003', name: 'Bob Wilson', lastUsed: '2024-05-25 17:45', status: 'Active' },
-  { id: 'RFID004', name: 'Alice Brown', lastUsed: '2024-05-25 14:20', status: 'Inactive' },
-  { id: 'RFID005', name: 'Charlie Davis', lastUsed: '2024-05-26 11:10', status: 'Active' },
-  { id: 'RFID006', name: 'Diana Green', lastUsed: '2024-05-24 16:30', status: 'Active' },
-  { id: 'RFID007', name: 'Frank Miller', lastUsed: '2024-05-26 07:45', status: 'Active' }
+  {
+    id: 'ICARO001',
+    name: 'Icaro Alvim',
+    lastUsed: new Date().toLocaleString(),
+    status: 'Active',
+    type: 'teacher'
+  },
+  {
+    id: 'MOISES001',
+    name: 'Moises Lima',
+    lastUsed: new Date().toLocaleString(),
+    status: 'Active',
+    type: 'teacher'
+  }
 ];
+
+// Estado dos laboratórios
+let laboratories = {
+  1: { teacher: null, isLocked: false },
+  2: { teacher: null, isLocked: false },
+  3: { teacher: null, isLocked: false },
+  4: { teacher: null, isLocked: false },
+  5: { teacher: null, isLocked: false },
+  6: { teacher: null, isLocked: false },
+  7: { teacher: null, isLocked: false },
+  8: { teacher: null, isLocked: false },
+  9: { teacher: null, isLocked: false },
+  10: { teacher: null, isLocked: false }
+};
+
+// Schedule management
+const scheduleData = {
+  segunda: {
+    manha: [
+      { time: '08:00 - 09:40', lab: 1, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '08:00 - 09:40', lab: 2, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 3, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 4, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' }
+    ],
+    tarde: [
+      { time: '13:30 - 15:10', lab: 5, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '13:30 - 15:10', lab: 6, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 7, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 8, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' }
+    ],
+    noite: [
+      { time: '18:30 - 20:10', lab: 9, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '18:30 - 20:10', lab: 10, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 1, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 2, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' }
+    ]
+  },
+  terca: {
+    manha: [
+      { time: '08:00 - 09:40', lab: 3, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '08:00 - 09:40', lab: 4, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 5, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 6, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' }
+    ],
+    tarde: [
+      { time: '13:30 - 15:10', lab: 7, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '13:30 - 15:10', lab: 8, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 9, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 10, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' }
+    ],
+    noite: [
+      { time: '18:30 - 20:10', lab: 1, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '18:30 - 20:10', lab: 2, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 3, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 4, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' }
+    ]
+  },
+  quarta: {
+    manha: [
+      { time: '08:00 - 09:40', lab: 5, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '08:00 - 09:40', lab: 6, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 7, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 8, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' }
+    ],
+    tarde: [
+      { time: '13:30 - 15:10', lab: 9, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '13:30 - 15:10', lab: 10, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 1, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 2, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' }
+    ],
+    noite: [
+      { time: '18:30 - 20:10', lab: 3, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '18:30 - 20:10', lab: 4, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 5, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 6, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' }
+    ]
+  },
+  quinta: {
+    manha: [
+      { time: '08:00 - 09:40', lab: 7, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '08:00 - 09:40', lab: 8, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 9, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 10, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' }
+    ],
+    tarde: [
+      { time: '13:30 - 15:10', lab: 1, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '13:30 - 15:10', lab: 2, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 3, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 4, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' }
+    ],
+    noite: [
+      { time: '18:30 - 20:10', lab: 5, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '18:30 - 20:10', lab: 6, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 7, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 8, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' }
+    ]
+  },
+  sexta: {
+    manha: [
+      { time: '08:00 - 09:40', lab: 9, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '08:00 - 09:40', lab: 10, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 1, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '10:00 - 11:40', lab: 2, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' }
+    ],
+    tarde: [
+      { time: '13:30 - 15:10', lab: 3, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '13:30 - 15:10', lab: 4, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 5, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 6, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' }
+    ],
+    noite: [
+      { time: '18:30 - 20:10', lab: 7, subject: 'Programação de Apps', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '18:30 - 20:10', lab: 8, subject: 'Desenvolvimento de Sistemas', teacher: 'Moises Lima', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 9, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '20:20 - 22:00', lab: 10, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' }
+    ]
+  }
+};
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('Smart Lock Dashboard initialized');
+  loadData();
   
-  // Load initial data
-  loadActivityFeed();
-  loadRegisteredTags();
-  updateStats();
+  const isActivityPage = window.location.pathname.includes('activity.html');
   
-  // Start real-time simulation
+  if (isActivityPage) {
+    initActivityPage();
+  } else {
+    // Initialize dashboard
+    console.log('Smart Lock Dashboard initialized');
+    loadActivityFeed();
+    updateStats();
   startRealTimeSimulation();
+    setInterval(updateTimestamps, 60000);
   
-  // Update timestamps every minute
-  setInterval(updateTimestamps, 60000);
+    // Atualizar informações do professor inicial
+    updateTeacherInfo();
+  }
 });
 
 // Activity feed functions
@@ -104,6 +251,147 @@ function formatRelativeTime(timestamp) {
   return 'Just now';
 }
 
+// Laboratory management
+function changeLaboratory() {
+  const select = document.getElementById('laboratorySelect');
+  currentLaboratory = parseInt(select.value);
+  
+  // Update UI with current laboratory state
+  const lab = laboratories[currentLaboratory];
+  isLocked = lab.isLocked;
+  
+  // Update room status
+  const roomStatus = document.getElementById('roomStatus');
+  roomStatus.textContent = isLocked ? 'Trancado' : 'Desbloqueado';
+  roomStatus.className = isLocked ? 'status-locked' : 'status-unlocked';
+  
+  // Update lock button
+  const lockBtn = document.getElementById('lockBtn');
+  lockBtn.innerHTML = isLocked ? 
+    '<i class="bi bi-lock-fill me-2"></i>Destrancar Laboratório' :
+    '<i class="bi bi-unlock-fill me-2"></i>Trancar Laboratório';
+  lockBtn.className = isLocked ? 'btn btn-danger' : 'btn btn-success';
+  
+  // Update teacher info
+  updateTeacherInfo();
+  
+  addActivity('info', 'Laboratório Alterado', `Laboratório ${currentLaboratory} selecionado`, 'bi-building');
+  syncData();
+}
+
+function updateTeacherInfo() {
+  const currentTeacher = document.getElementById('currentTeacher');
+  const currentRFID = document.getElementById('currentRFID');
+  
+  if (!currentTeacher || !currentRFID) return;
+  
+  const lab = laboratories[currentLaboratory];
+  
+  if (lab && lab.teacher) {
+    currentTeacher.textContent = lab.teacher.name;
+    currentRFID.textContent = lab.teacher.rfid;
+  } else {
+    currentTeacher.textContent = 'Não definido';
+    currentRFID.textContent = '-';
+  }
+}
+
+function changeTeacher() {
+  const modal = new bootstrap.Modal(document.getElementById('changeTeacherModal'));
+  modal.show();
+}
+
+// Função para atualizar as opções de matérias baseado no professor selecionado
+function updateSubjectOptions() {
+  const teacherSelect = document.getElementById('teacherSelect');
+  const subjectSelect = document.getElementById('subjectSelect');
+  const selectedTeacher = teachers[teacherSelect.value];
+
+  // Limpar opções atuais
+  subjectSelect.innerHTML = '<option value="">Selecione uma matéria...</option>';
+
+  if (selectedTeacher) {
+    // Adicionar as matérias do professor selecionado
+    selectedTeacher.subjects.forEach(subject => {
+      const option = document.createElement('option');
+      option.value = subject;
+      option.textContent = subject;
+      subjectSelect.appendChild(option);
+    });
+  }
+}
+
+function confirmTeacherChange() {
+  const teacherRFID = document.getElementById('teacherSelect').value;
+  const subject = document.getElementById('subjectSelect').value;
+  const teacherDay = document.getElementById('teacherDay').value;
+  const teacherShift = document.getElementById('teacherShift').value;
+  const teacherTime = document.getElementById('teacherTime').value;
+
+  if (!teacherRFID) {
+    alert('Por favor, selecione um professor.');
+    return;
+  }
+
+  if (!subject) {
+    alert('Por favor, selecione uma matéria.');
+    return;
+  }
+
+  const teacher = teachers[teacherRFID];
+
+  // Atualizar o professor no laboratório atual
+  laboratories[currentLaboratory].teacher = teacher;
+
+  // Atualizar o horário no scheduleData
+  const schedule = scheduleData[teacherDay][teacherShift];
+  const classIndex = schedule.findIndex(c => c.lab === currentLaboratory);
+  
+  if (classIndex !== -1) {
+    schedule[classIndex].teacher = teacher.name;
+    schedule[classIndex].subject = subject;
+  } else {
+    schedule.push({
+      time: teacherTime,
+      lab: currentLaboratory,
+      subject: subject,
+      teacher: teacher.name,
+      status: 'Aguardando'
+    });
+  }
+
+  // Atualizar a interface
+  updateTeacherInfo();
+  
+  // Registrar a atividade
+  addActivity(
+    'info',
+    'Professor Alterado',
+    `Professor ${teacher.name} alocado para o Laboratório ${currentLaboratory} - ${subject} - ${teacherDay} ${teacherShift} ${teacherTime}`,
+    'bi-person-plus-fill'
+  );
+
+  // Atualizar o cronograma se estiver na página de atividade
+  if (window.location.pathname.includes('activity.html')) {
+    updateSchedule();
+  } else {
+    // Se estiver na página principal, atualizar o localStorage para sincronizar com a página de atividade
+    syncData();
+    // Forçar atualização do cronograma na página de atividade
+    localStorage.setItem('forceUpdateSchedule', 'true');
+  }
+
+  // Sincronizar dados entre as páginas
+  syncData();
+
+  // Fechar o modal
+  const modal = bootstrap.Modal.getInstance(document.getElementById('changeTeacherModal'));
+  modal.hide();
+
+  // Limpar o formulário
+  document.getElementById('changeTeacherForm').reset();
+}
+
 // Room control functions
 function toggleLock() {
   const lockBtn = document.getElementById('lockBtn');
@@ -111,24 +399,30 @@ function toggleLock() {
   const lastAccess = document.getElementById('lastAccess');
   
   isLocked = !isLocked;
+  laboratories[currentLaboratory].isLocked = isLocked;
   
   if (isLocked) {
-    lockBtn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Unlock Room';
+    lockBtn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Destrancar Laboratório';
     lockBtn.className = 'btn btn-danger';
-    roomStatus.textContent = 'Locked';
+    roomStatus.textContent = 'Trancado';
     roomStatus.className = 'card-text status-locked';
     
-    addActivity('danger', 'Room Locked', 'Room has been manually locked via dashboard', 'bi-lock-fill');
+    addActivity('danger', 'Laboratório Trancado', 
+      `Laboratório ${currentLaboratory} foi trancado manualmente`, 
+      'bi-lock-fill');
   } else {
-    lockBtn.innerHTML = '<i class="bi bi-unlock-fill me-2"></i>Lock Room';
+    lockBtn.innerHTML = '<i class="bi bi-unlock-fill me-2"></i>Trancar Laboratório';
     lockBtn.className = 'btn btn-success';
-    roomStatus.textContent = 'Unlocked';
+    roomStatus.textContent = 'Desbloqueado';
     roomStatus.className = 'card-text status-unlocked';
     
-    addActivity('success', 'Room Unlocked', 'Room has been manually unlocked via dashboard', 'bi-unlock-fill');
+    addActivity('success', 'Laboratório Destrancado', 
+      `Laboratório ${currentLaboratory} foi destrancado manualmente`, 
+      'bi-unlock-fill');
   }
   
-  lastAccess.textContent = 'Last access: Just now';
+  lastAccess.textContent = 'Último acesso: Agora mesmo';
+  syncData();
 }
 
 function registerTag() {
@@ -203,6 +497,7 @@ function clearActivity() {
 // Tags management
 function loadRegisteredTags() {
   const tagsTable = document.getElementById('tagsTable');
+  if (!tagsTable) return;
   
   tagsTable.innerHTML = registeredTags.map(tag => `
     <tr>
@@ -212,6 +507,11 @@ function loadRegisteredTags() {
       <td>
         <span class="badge ${tag.status === 'Active' ? 'bg-success' : 'bg-secondary'}">
           ${tag.status}
+        </span>
+      </td>
+      <td>
+        <span class="badge ${tag.type === 'teacher' ? 'bg-primary' : 'bg-info'}">
+          ${tag.type === 'teacher' ? 'Professor' : 'Aluno'}
         </span>
       </td>
       <td>
@@ -251,26 +551,19 @@ function deleteTag(tagId) {
 
 // Statistics and updates
 function updateStats() {
-  const todayAccess = document.getElementById('todayAccess');
-  const hourlyAccess = document.getElementById('hourlyAccess');
-  const weeklyAccess = document.getElementById('weeklyAccess');
-  const failedAttempts = document.getElementById('failedAttempts');
+  // Update connection status
+  const connectionStatus = document.getElementById('connectionStatus');
+  connectionStatus.textContent = 'Online';
+  connectionStatus.className = 'status-online';
   
-  // Count activities for different time periods
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const hourStart = new Date(now.getTime() - 60 * 60 * 1000);
-  const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  // Update room status
+  const roomStatus = document.getElementById('roomStatus');
+  roomStatus.textContent = isLocked ? 'Trancado' : 'Desbloqueado';
+  roomStatus.className = isLocked ? 'status-locked' : 'status-unlocked';
   
-  const todayCount = activityData.filter(a => a.timestamp >= todayStart && a.type === 'success').length;
-  const hourCount = activityData.filter(a => a.timestamp >= hourStart && a.type === 'success').length;
-  const weekCount = activityData.filter(a => a.timestamp >= weekStart && a.type === 'success').length;
-  const failedCount = activityData.filter(a => a.type === 'danger').length;
-  
-  todayAccess.textContent = todayCount + 12; // Add baseline
-  hourlyAccess.textContent = hourCount + 3; // Add baseline
-  weeklyAccess.textContent = weekCount + 47; // Add baseline
-  failedAttempts.textContent = failedCount;
+  // Update last access time
+  const lastAccess = document.getElementById('lastAccess');
+  lastAccess.textContent = 'Último acesso: ' + formatRelativeTime(new Date());
 }
 
 function updateActiveTags() {
@@ -286,56 +579,17 @@ function updateTimestamps() {
 
 // Real-time simulation
 function startRealTimeSimulation() {
-  // Simulate RFID access events
-  const simulateAccess = () => {
-    const users = ['John Doe', 'Jane Smith', 'Bob Wilson', 'Alice Brown', 'Charlie Davis'];
-    const actions = [
-      { type: 'success', title: 'Access Granted', desc: 'RFID tag authorized', icon: 'bi-check-circle-fill' },
-      { type: 'success', title: 'Room Unlocked', desc: 'Door opened successfully', icon: 'bi-door-open-fill' },
-      { type: 'info', title: 'Tag Scanned', desc: 'RFID tag detected', icon: 'bi-credit-card-fill' }
-    ];
-    
-    const randomUser = users[Math.floor(Math.random() * users.length)];
-    const randomAction = actions[Math.floor(Math.random() * actions.length)];
-    
-    addActivity(
-      randomAction.type,
-      randomAction.title,
-      `${randomAction.desc} - ${randomUser}`,
-      randomAction.icon
-    );
-  };
+  // Remover a simulação automática de eventos
+  // As atividades agora serão registradas apenas quando houver interações reais
   
-  // Simulate occasional failed attempts
-  const simulateFailure = () => {
-    const failures = [
-      'Unknown RFID tag detected',
-      'Invalid access attempt',
-      'Tag access denied - expired',
-      'Multiple failed scan attempts'
-    ];
-    
-    const randomFailure = failures[Math.floor(Math.random() * failures.length)];
-    addActivity('danger', 'Access Denied', randomFailure, 'bi-x-circle-fill');
-  };
-  
-  // Random events every 10-30 seconds
-  setInterval(() => {
-    if (Math.random() < 0.8) {
-      simulateAccess();
-    } else {
-      simulateFailure();
-    }
-  }, Math.random() * 20000 + 10000);
-  
-  // Update connection status randomly
+  // Atualizar status da conexão a cada 30 segundos
   setInterval(() => {
     const connectionStatus = document.getElementById('connectionStatus');
     if (Math.random() < 0.95) {
       connectionStatus.textContent = 'Online';
       connectionStatus.className = 'card-text status-online';
     } else {
-      connectionStatus.textContent = 'Reconnecting...';
+      connectionStatus.textContent = 'Reconectando...';
       connectionStatus.className = 'card-text status-offline';
       
       setTimeout(() => {
@@ -346,14 +600,41 @@ function startRealTimeSimulation() {
   }, 30000);
 }
 
+// Função para registrar acesso
+function registerAccess(success, message) {
+  const lab = laboratories[currentLaboratory];
+  
+  if (success) {
+    if (!lab.teacher) {
+      addActivity('danger', 'Acesso Negado', 'Nenhum professor responsável definido', 'bi-x-circle-fill');
+      return;
+    }
+
+    addActivity('success', 'Acesso Autorizado', 
+      `RFID autorizado - ${lab.teacher.name} (${lab.teacher.rfid})`, 
+      'bi-check-circle-fill');
+    
+    addActivity('success', 'Laboratório Desbloqueado', 
+      `Porta aberta com sucesso - Laboratório ${currentLaboratory}`, 
+      'bi-door-open-fill');
+  } else {
+    addActivity('danger', 'Acesso Negado', message, 'bi-x-circle-fill');
+  }
+}
+
+// Função para registrar tentativa de acesso
+function registerAccessAttempt(rfid) {
+  addActivity('info', 'Tag Detectada', 
+    `RFID detectado: ${rfid}`, 
+    'bi-credit-card-fill');
+}
+
 // Initialize with some sample activity
 function loadActivityFeed() {
   const sampleActivities = [
-    { type: 'success', title: 'Access Granted', desc: 'RFID tag authorized - John Doe', icon: 'bi-check-circle-fill' },
-    { type: 'success', title: 'Room Unlocked', desc: 'Door opened successfully - Jane Smith', icon: 'bi-door-open-fill' },
-    { type: 'info', title: 'Tag Scanned', desc: 'RFID tag detected - Bob Wilson', icon: 'bi-credit-card-fill' },
-    { type: 'warning', title: 'Low Battery', desc: 'RFID reader battery at 15%', icon: 'bi-battery-half' },
-    { type: 'success', title: 'Access Granted', desc: 'RFID tag authorized - Alice Brown', icon: 'bi-check-circle-fill' }
+    { type: 'info', title: 'Sistema Iniciado', desc: 'Painel de controle inicializado', icon: 'bi-power' },
+    { type: 'info', title: 'Laboratório Selecionado', desc: 'Laboratório 1 selecionado', icon: 'bi-building' },
+    { type: 'warning', title: 'Professor Não Definido', desc: 'Nenhum professor responsável definido', icon: 'bi-person-x-fill' }
   ];
   
   sampleActivities.forEach((activity, index) => {
@@ -363,12 +644,329 @@ function loadActivityFeed() {
   });
 }
 
+// Clock functions
+function updateClock() {
+  const now = new Date();
+  const timeElement = document.getElementById('currentTime');
+  const dateElement = document.getElementById('currentDate');
+  
+  if (timeElement && dateElement) {
+    timeElement.textContent = now.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    dateElement.textContent = now.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+}
+
+// Initialize activity page
+function initActivityPage() {
+  loadData();
+  
+  // Verificar se há necessidade de atualização forçada
+  const forceUpdate = localStorage.getItem('forceUpdateSchedule');
+  if (forceUpdate === 'true') {
+    updateSchedule();
+    localStorage.removeItem('forceUpdateSchedule');
+  }
+  
+  // Atualizar status inicial
+  updateScheduleStatus();
+  
+  // Atualizar a cada minuto
+  setInterval(updateScheduleStatus, 60000);
+  
+  // Iniciar relógio
+  updateClock();
+  setInterval(updateClock, 1000);
+}
+
+// Função para converter horário em minutos
+function timeToMinutes(timeStr) {
+  const [time] = timeStr.split(' - ');
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+// Função para verificar se uma aula está em andamento
+function isClassInProgress(startTime, endTime, currentTime) {
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = timeToMinutes(endTime);
+  return currentTime >= startMinutes && currentTime <= endMinutes;
+}
+
+// Função para verificar se uma aula já foi concluída
+function isClassCompleted(endTime, currentTime) {
+  const endMinutes = timeToMinutes(endTime);
+  return currentTime > endMinutes;
+}
+
+// Função para verificar se um dia já passou
+function isDayPassed(day) {
+  const days = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  const today = new Date();
+  const currentDay = days[today.getDay()];
+  
+  const dayIndex = days.indexOf(day);
+  const currentDayIndex = days.indexOf(currentDay);
+  
+  return dayIndex < currentDayIndex;
+}
+
+// Função para verificar se é o dia atual
+function isCurrentDay(day) {
+  const days = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  const today = new Date();
+  const currentDay = days[today.getDay()];
+  
+  return day === currentDay;
+}
+
+// Função para verificar se um turno já passou
+function isShiftPassed(shift) {
+  const now = new Date();
+  const currentHour = now.getHours();
+  
+  if (shift === 'manha' && currentHour >= 12) return true;
+  if (shift === 'tarde' && currentHour >= 18) return true;
+  if (shift === 'noite' && currentHour >= 22) return true;
+  
+  return false;
+}
+
+// Função para obter o turno atual
+function getCurrentShift() {
+  const currentHour = new Date().getHours();
+  
+  if (currentHour >= 8 && currentHour < 12) return 'manha';
+  if (currentHour >= 13 && currentHour < 18) return 'tarde';
+  if (currentHour >= 18 && currentHour < 22) return 'noite';
+  
+  return 'manha';
+}
+
+// Função para atualizar o status das aulas
+function updateScheduleStatus() {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const currentTime = currentHour * 60 + currentMinutes;
+  
+  // Obter dia e turno atual
+  const days = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  const currentDay = days[now.getDay()];
+  const currentShift = getCurrentShift();
+  
+  // Atualizar display do cronograma
+  const daySelect = document.getElementById('scheduleDay');
+  const shiftSelect = document.getElementById('scheduleShift');
+  
+  if (daySelect && shiftSelect) {
+    daySelect.value = currentDay;
+    shiftSelect.value = currentShift;
+  }
+  
+  // Atualizar status das aulas para todos os dias e turnos
+  Object.keys(scheduleData).forEach(day => {
+    Object.keys(scheduleData[day]).forEach(shift => {
+      const classes = scheduleData[day][shift];
+      if (classes) {
+        classes.forEach(lesson => {
+          // Se o dia já passou, todas as aulas são concluídas
+          if (isDayPassed(day)) {
+            lesson.status = 'Concluído';
+          }
+          // Se é o dia atual
+          else if (isCurrentDay(day)) {
+            // Se o turno já passou, todas as aulas são concluídas
+            if (isShiftPassed(shift)) {
+              lesson.status = 'Concluído';
+            }
+            // Se é o turno atual
+            else if (shift === currentShift) {
+              const [startTime, endTime] = lesson.time.split(' - ');
+              if (isClassInProgress(startTime, endTime, currentTime)) {
+                lesson.status = 'Em andamento';
+              } else if (isClassCompleted(endTime, currentTime)) {
+                lesson.status = 'Concluído';
+              } else {
+                lesson.status = 'Aguardando';
+              }
+            }
+            // Se é um turno futuro do dia atual
+            else {
+              lesson.status = 'Aguardando';
+            }
+          }
+          // Se é um dia futuro
+          else {
+            lesson.status = 'Aguardando';
+          }
+        });
+      }
+    });
+  });
+  
+  // Atualizar professores baseado no cronograma atual
+  if (currentDay !== 'domingo' && currentDay !== 'sabado') {
+    const currentClasses = scheduleData[currentDay][currentShift];
+    if (currentClasses) {
+      currentClasses.forEach(lesson => {
+        const labNumber = lesson.lab;
+        const teacherRFID = lesson.teacher === 'Icaro Alvim' ? 'ICARO001' : 'MOISES001';
+        laboratories[labNumber] = {
+          ...laboratories[labNumber],
+          teacher: teachers[teacherRFID]
+        };
+      });
+    }
+  }
+  
+  updateSchedule();
+  syncData();
+}
+
+// Função para atualizar o cronograma
+function updateSchedule() {
+  const day = document.getElementById('scheduleDay')?.value;
+  const shift = document.getElementById('scheduleShift')?.value;
+  const scheduleTable = document.getElementById('scheduleTable');
+  
+  if (!day || !shift || !scheduleTable) return;
+  
+  const classes = scheduleData[day][shift];
+  
+  if (!classes || classes.length === 0) {
+    scheduleTable.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center text-muted py-4">
+          <i class="bi bi-calendar-x" style="font-size: 2rem;"></i>
+          <p class="mt-2">Nenhuma aula agendada para este período</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  // Ordenar aulas por horário
+  classes.sort((a, b) => {
+    const aStart = timeToMinutes(a.time);
+    const bStart = timeToMinutes(b.time);
+    return aStart - bStart;
+  });
+  
+  scheduleTable.innerHTML = classes.map(lesson => {
+    const teacher = teachers[lesson.teacher === 'Icaro Alvim' ? 'ICARO001' : 'MOISES001'];
+    const statusClass = getStatusBadgeClass(lesson.status);
+    const isInProgress = lesson.status === 'Em andamento';
+    
+    return `
+      <tr class="${isInProgress ? 'table-success' : ''}">
+        <td>${lesson.time}</td>
+        <td>
+          <span class="badge bg-primary">Laboratório ${lesson.lab}</span>
+        </td>
+        <td>${lesson.subject}</td>
+        <td>${lesson.teacher}</td>
+        <td><code>${teacher.rfid}</code></td>
+        <td>
+          <span class="badge ${statusClass}">
+            ${lesson.status}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Função para obter a classe do badge de status
+function getStatusBadgeClass(status) {
+  switch(status) {
+    case 'Em andamento':
+      return 'bg-success';
+    case 'Aguardando':
+      return 'bg-warning';
+    case 'Concluído':
+      return 'bg-secondary';
+    default:
+      return 'bg-primary';
+  }
+}
+
+// Função para sincronizar os dados entre as páginas
+function syncData() {
+  // Salvar dados no localStorage
+  localStorage.setItem('laboratories', JSON.stringify(laboratories));
+  localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
+  localStorage.setItem('activityData', JSON.stringify(activityData));
+}
+
+// Função para carregar dados do localStorage
+function loadData() {
+  const savedLaboratories = localStorage.getItem('laboratories');
+  const savedTags = localStorage.getItem('registeredTags');
+  const savedActivity = localStorage.getItem('activityData');
+  
+  if (savedLaboratories) {
+    laboratories = JSON.parse(savedLaboratories);
+  }
+  
+  if (savedTags) {
+    registeredTags = JSON.parse(savedTags);
+  }
+  
+  if (savedActivity) {
+    activityData = JSON.parse(savedActivity);
+  }
+}
+
+// Função para atualizar o professor no laboratório baseado no cronograma
+function updateTeacherFromSchedule() {
+  const now = new Date();
+  const days = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  const currentDay = days[now.getDay()];
+  
+  let currentShift;
+  const currentHour = now.getHours();
+  if (currentHour >= 8 && currentHour < 12) {
+    currentShift = 'manha';
+  } else if (currentHour >= 13 && currentHour < 18) {
+    currentShift = 'tarde';
+  } else if (currentHour >= 18 && currentHour < 22) {
+    currentShift = 'noite';
+  } else {
+    currentShift = 'manha';
+  }
+  
+  // Atualizar professores baseado no cronograma atual
+  if (currentDay !== 'domingo' && currentDay !== 'sabado') {
+    const currentClasses = scheduleData[currentDay][currentShift];
+    if (currentClasses) {
+      currentClasses.forEach(lesson => {
+        const labNumber = lesson.lab;
+        const teacherRFID = lesson.teacher === 'Icaro Alvim' ? 'ICARO001' : 'MOISES001';
+        laboratories[labNumber] = {
+          ...laboratories[labNumber],
+          teacher: teachers[teacherRFID]
+        };
+      });
+    }
+  }
+  
+  syncData();
+}
+
 // Export functions for testing (if needed)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     addActivity,
     toggleLock,
-    registerTag,
     formatRelativeTime
   };
 }

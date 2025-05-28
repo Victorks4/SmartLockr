@@ -1,11 +1,18 @@
 
 /* Base Layout and Typography */
 
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%; /* Garante que o html ocupe 100% da altura */
+}
+
 body {
   background: var(--bg-gradient);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  min-height: 100vh;
+  min-height: 100vh; /* Já estava, mas agora com html height 100% funciona melhor */
   color: var(--light-color);
+  overflow-x: hidden; /* Evita rolagem horizontal indesejada */
 }
 
 /* Text Colors */

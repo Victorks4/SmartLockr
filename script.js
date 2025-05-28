@@ -5,54 +5,28 @@ let isLocked = false;
 let activityData = [];
 let currentLaboratory = 1;
 
-// Professores e seus IDs RFID
-const teachers = {
-  'ICARO001': {
-    name: 'Icaro Alvim',
-    rfid: 'ICARO001',
-    subjects: ['Internet das Coisas', 'Programação de Apps', 'Análise de Dados']
-  },
-  'MOISES001': {
-    name: 'Moises Lima',
-    rfid: 'MOISES001',
-    subjects: ['Banco de Dados', 'Desenvolvimento de Sistemas', 'Lógica de Programação']
-  }
-};
+// Professores e seus IDs RFID (carregados ou inicializados)
+let teachers = {};
 
-// Tags registradas (incluindo professores)
-let registeredTags = [
-  {
-    id: 'ICARO001',
-    name: 'Icaro Alvim',
-    lastUsed: new Date().toLocaleString(),
-    status: 'Active',
-    type: 'teacher'
-  },
-  {
-    id: 'MOISES001',
-    name: 'Moises Lima',
-    lastUsed: new Date().toLocaleString(),
-    status: 'Active',
-    type: 'teacher'
-  }
-];
+// Tags registradas (incluindo professores) (carregadas ou inicializadas)
+let registeredTags = [];
 
 // Estado dos laboratórios
 let laboratories = {
-  1: { teacher: null, isLocked: false },
-  2: { teacher: null, isLocked: false },
-  3: { teacher: null, isLocked: false },
-  4: { teacher: null, isLocked: false },
-  5: { teacher: null, isLocked: false },
-  6: { teacher: null, isLocked: false },
-  7: { teacher: null, isLocked: false },
-  8: { teacher: null, isLocked: false },
-  9: { teacher: null, isLocked: false },
-  10: { teacher: null, isLocked: false }
+  1: { teacher: null, isLocked: false, assignedClass: null },
+  2: { teacher: null, isLocked: false, assignedClass: null },
+  3: { teacher: null, isLocked: false, assignedClass: null },
+  4: { teacher: null, isLocked: false, assignedClass: null },
+  5: { teacher: null, isLocked: false, assignedClass: null },
+  6: { teacher: null, isLocked: false, assignedClass: null },
+  7: { teacher: null, isLocked: false, assignedClass: null },
+  8: { teacher: null, isLocked: false, assignedClass: null },
+  9: { teacher: null, isLocked: false, assignedClass: null },
+  10: { teacher: null, isLocked: false, assignedClass: null }
 };
 
 // Schedule management
-const scheduleData = {
+const initialScheduleData = {
   segunda: {
     manha: [
       { time: '08:00 - 09:40', lab: 1, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
@@ -155,9 +129,44 @@ const scheduleData = {
   }
 };
 
+
+let scheduleData = JSON.parse(JSON.stringify(initialScheduleData)); // Initialize with a deep copy
+
+// Dados iniciais padrão para professores e tags (usados se o localStorage estiver vazio)
+const defaultTeachers = {
+  'ICARO001': {
+    name: 'Icaro Alvim',
+    rfid: 'ICARO001',
+    subjects: ['Internet das Coisas', 'Programação de Apps', 'Análise de Dados']
+  },
+  'MOISES001': {
+    name: 'Moises Lima',
+    rfid: 'MOISES001',
+    subjects: ['Banco de Dados', 'Desenvolvimento de Sistemas', 'Lógica de Programação']
+  }
+};
+
+const defaultRegisteredTags = [
+  {
+    id: 'ICARO001',
+    name: 'Icaro Alvim',
+    lastUsed: new Date().toLocaleString(),
+    status: 'Active',
+    type: 'teacher'
+  },
+  {
+    id: 'MOISES001',
+    name: 'Moises Lima',
+    lastUsed: new Date().toLocaleString(),
+    status: 'Active',
+    type: 'teacher'
+  }
+];
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
-  loadData();
+  loadData(); // Carrega os dados do localStorage
+  initializeDefaultDataIfEmpty(); // Inicializa com dados padrão se o localStorage estiver vazio
   
   const isActivityPage = window.location.pathname.includes('activity.html');
   
@@ -168,11 +177,12 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Smart Lock Dashboard initialized');
     loadActivityFeed();
     updateStats();
-  startRealTimeSimulation();
+    startRealTimeSimulation();
     setInterval(updateTimestamps, 60000);
   
     // Atualizar informações do professor inicial
     updateTeacherInfo();
+    populateTeacherSelect(); // Popula o select de professores na página principal
   }
 });
 
@@ -342,15 +352,24 @@ function confirmTeacherChange() {
 
   // Atualizar o professor no laboratório atual
   laboratories[currentLaboratory].teacher = teacher;
+  laboratories[currentLaboratory].assignedClass = {
+    day: teacherDay,
+    shift: teacherShift,
+    time: teacherTime,
+    subject: subject,
+    teacherName: teacher.name // Store teacher name for easier lookup
+  };
 
   // Atualizar o horário no scheduleData
   const schedule = scheduleData[teacherDay][teacherShift];
-  const classIndex = schedule.findIndex(c => c.lab === currentLaboratory);
+  const classIndex = schedule.findIndex(c => c.lab === currentLaboratory && c.time === teacherTime);
   
   if (classIndex !== -1) {
+    // Update existing class
     schedule[classIndex].teacher = teacher.name;
     schedule[classIndex].subject = subject;
   } else {
+    // Add new class
     schedule.push({
       time: teacherTime,
       lab: currentLaboratory,
@@ -390,6 +409,55 @@ function confirmTeacherChange() {
 
   // Limpar o formulário
   document.getElementById('changeTeacherForm').reset();
+}
+
+function removeTeacher() {
+  const lab = laboratories[currentLaboratory];
+
+  if (!lab.teacher) {
+    alert('Não há professor alocado para remover neste laboratório.');
+    return;
+  }
+
+  const teacherName = lab.teacher.name;
+
+  if (!confirm(`Tem certeza que deseja remover o professor ${teacherName} do Laboratório ${currentLaboratory}? Isso removerá apenas as aulas agendadas para este laboratório.`)) {
+    return;
+  }
+
+  // Remover o professor do laboratório atual
+  lab.teacher = null;
+  lab.assignedClass = null;
+
+  // Remover as aulas agendadas para este laboratório, independentemente do professor
+  // (se o objetivo é limpar o agendamento do laboratório)
+  // Ou, se o objetivo é remover APENAS as aulas daquele professor naquele laboratório:
+  Object.keys(scheduleData).forEach(day => {
+    Object.keys(scheduleData[day]).forEach(shift => {
+      scheduleData[day][shift] = scheduleData[day][shift].filter(lesson =>
+        !(lesson.lab === currentLaboratory && lesson.teacher === teacherName)
+      );
+    });
+  });
+
+  // Atualizar a interface
+  updateTeacherInfo();
+  // Não precisa atualizar populateTeacherSelect, loadRegisteredTags, updateActiveTags
+  // pois o professor não é removido do sistema, apenas desvinculado do laboratório.
+
+  // Registrar a atividade
+  addActivity(
+    'warning',
+    'Professor Desalocado',
+    `Professor ${teacherName} desalocado do Laboratório ${currentLaboratory}. Aulas agendadas para este laboratório foram removidas.`,
+    'bi-person-x-fill'
+  );
+
+  // Sincronizar dados entre as páginas
+  syncData();
+
+  // Forçar atualização do cronograma na página de atividade
+  localStorage.setItem('forceUpdateSchedule', 'true');
 }
 
 // Room control functions
@@ -667,7 +735,7 @@ function updateClock() {
 
 // Initialize activity page
 function initActivityPage() {
-  loadData();
+  // No need to call loadData() here, it's called in DOMContentLoaded
   
   // Verificar se há necessidade de atualização forçada
   const forceUpdate = localStorage.getItem('forceUpdateSchedule');
@@ -819,11 +887,20 @@ function updateScheduleStatus() {
     if (currentClasses) {
       currentClasses.forEach(lesson => {
         const labNumber = lesson.lab;
-        const teacherRFID = lesson.teacher === 'Icaro Alvim' ? 'ICARO001' : 'MOISES001';
-        laboratories[labNumber] = {
-          ...laboratories[labNumber],
-          teacher: teachers[teacherRFID]
-        };
+        // Buscar o professor pelo nome no objeto teachers
+        const teacherEntry = Object.values(teachers).find(t => t.name === lesson.teacher);
+        if (teacherEntry) {
+          laboratories[labNumber] = {
+            ...laboratories[labNumber],
+            teacher: teacherEntry
+          };
+        } else {
+          // Se o professor não for encontrado (foi removido), defina como null
+          laboratories[labNumber] = {
+            ...laboratories[labNumber],
+            teacher: null
+          };
+        }
       });
     }
   }
@@ -862,7 +939,9 @@ function updateSchedule() {
   });
   
   scheduleTable.innerHTML = classes.map(lesson => {
-    const teacher = teachers[lesson.teacher === 'Icaro Alvim' ? 'ICARO001' : 'MOISES001'];
+    // Buscar o professor pelo nome no objeto teachers
+    const teacher = Object.values(teachers).find(t => t.name === lesson.teacher);
+    const teacherRFID = teacher ? teacher.rfid : 'N/A'; // Se o professor foi removido, exibe N/A
     const statusClass = getStatusBadgeClass(lesson.status);
     const isInProgress = lesson.status === 'Em andamento';
     
@@ -873,8 +952,8 @@ function updateSchedule() {
           <span class="badge bg-primary">Laboratório ${lesson.lab}</span>
         </td>
         <td>${lesson.subject}</td>
-        <td>${lesson.teacher}</td>
-        <td><code>${teacher.rfid}</code></td>
+        <td>${lesson.teacher || 'Professor Removido'}</td>
+        <td><code>${teacherRFID}</code></td>
         <td>
           <span class="badge ${statusClass}">
             ${lesson.status}
@@ -905,6 +984,7 @@ function syncData() {
   localStorage.setItem('laboratories', JSON.stringify(laboratories));
   localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
   localStorage.setItem('activityData', JSON.stringify(activityData));
+  localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
 }
 
 // Função para carregar dados do localStorage
@@ -912,7 +992,9 @@ function loadData() {
   const savedLaboratories = localStorage.getItem('laboratories');
   const savedTags = localStorage.getItem('registeredTags');
   const savedActivity = localStorage.getItem('activityData');
-  
+  const savedSchedule = localStorage.getItem('scheduleData');
+  const savedTeachers = localStorage.getItem('teachers'); // Novo: carregar professores
+
   if (savedLaboratories) {
     laboratories = JSON.parse(savedLaboratories);
   }
@@ -923,6 +1005,50 @@ function loadData() {
   
   if (savedActivity) {
     activityData = JSON.parse(savedActivity);
+  }
+  
+  if (savedSchedule) {
+    scheduleData = JSON.parse(savedSchedule);
+  } else {
+    // If no saved schedule, re-initialize with a deep copy of the default
+    scheduleData = JSON.parse(JSON.stringify(initialScheduleData));
+  }
+
+  if (savedTeachers) { // Novo: carregar professores
+    teachers = JSON.parse(savedTeachers);
+  }
+}
+
+// Função para inicializar dados padrão se o localStorage estiver vazio
+function initializeDefaultDataIfEmpty() {
+  if (!localStorage.getItem('teachers')) {
+    teachers = JSON.parse(JSON.stringify(defaultTeachers));
+    localStorage.setItem('teachers', JSON.stringify(teachers));
+  }
+  if (!localStorage.getItem('registeredTags')) {
+    registeredTags = JSON.parse(JSON.stringify(defaultRegisteredTags));
+    localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
+  }
+  if (!localStorage.getItem('scheduleData')) {
+    scheduleData = JSON.parse(JSON.stringify(initialScheduleData));
+    localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+  }
+  // Outros dados (laboratories, activityData) são inicializados como vazios e preenchidos conforme uso
+  // ou podem ser inicializados aqui se houver um default para eles também.
+}
+
+// Função para popular o select de professores no modal
+function populateTeacherSelect() {
+  const teacherSelect = document.getElementById('teacherSelect');
+  if (teacherSelect) {
+    teacherSelect.innerHTML = '<option value="">Selecione um professor...</option>';
+    for (const rfid in teachers) {
+      const teacher = teachers[rfid];
+      const option = document.createElement('option');
+      option.value = teacher.rfid;
+      option.textContent = teacher.name;
+      teacherSelect.appendChild(option);
+    }
   }
 }
 
@@ -950,11 +1076,20 @@ function updateTeacherFromSchedule() {
     if (currentClasses) {
       currentClasses.forEach(lesson => {
         const labNumber = lesson.lab;
-        const teacherRFID = lesson.teacher === 'Icaro Alvim' ? 'ICARO001' : 'MOISES001';
-        laboratories[labNumber] = {
-          ...laboratories[labNumber],
-          teacher: teachers[teacherRFID]
-        };
+        // Buscar o professor pelo nome no objeto teachers
+        const teacherEntry = Object.values(teachers).find(t => t.name === lesson.teacher);
+        if (teacherEntry) {
+          laboratories[labNumber] = {
+            ...laboratories[labNumber],
+            teacher: teacherEntry
+          };
+        } else {
+          // Se o professor não for encontrado (foi removido), defina como null
+          laboratories[labNumber] = {
+            ...laboratories[labNumber],
+            teacher: null
+          };
+        }
       });
     }
   }

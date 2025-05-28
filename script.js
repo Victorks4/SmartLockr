@@ -103,7 +103,7 @@ const scheduleData = {
     tarde: [
       { time: '13:30 - 15:10', lab: 9, subject: 'Análise de Dados', teacher: 'Icaro Alvim', status: 'Aguardando' },
       { time: '13:30 - 15:10', lab: 10, subject: 'Lógica de Programação', teacher: 'Moises Lima', status: 'Aguardando' },
-      { time: '15:30 - 17:10', lab: 1, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
+      { time: '15:30 - 17:10', lab: 8, subject: 'Internet das Coisas', teacher: 'Icaro Alvim', status: 'Aguardando' },
       { time: '15:30 - 17:10', lab: 2, subject: 'Banco de Dados', teacher: 'Moises Lima', status: 'Aguardando' }
     ],
     noite: [

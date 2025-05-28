@@ -10,9 +10,16 @@ html, body {
 body {
   background: var(--bg-gradient);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  min-height: 100vh; /* Já estava, mas agora com html height 100% funciona melhor */
+  min-height: 100vh;
   color: var(--light-color);
-  overflow-x: hidden; /* Evita rolagem horizontal indesejada */
+  overflow-x: hidden;
+  display: flex; /* Adiciona flexbox ao body */
+  flex-direction: column; /* Organiza os itens em coluna */
+}
+
+/* Garante que o conteúdo principal ocupe o espaço restante */
+.container {
+  flex-grow: 1;
 }
 
 /* Text Colors */

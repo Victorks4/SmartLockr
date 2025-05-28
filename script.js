@@ -4,6 +4,7 @@
 let isLocked = false;
 let activityData = [];
 let currentLaboratory = 1;
+let todayAccessCount = 0; // Novo: contador de acessos diários
 
 // Professores e seus IDs RFID (carregados ou inicializados)
 let teachers = {};
@@ -487,10 +488,14 @@ function toggleLock() {
     addActivity('success', 'Laboratório Destrancado', 
       `Laboratório ${currentLaboratory} foi destrancado manualmente`, 
       'bi-unlock-fill');
+    
+    // Incrementar o contador de acessos diários
+    todayAccessCount++;
   }
   
   lastAccess.textContent = 'Último acesso: Agora mesmo';
   syncData();
+  updateStats(); // Chamar updateStats para atualizar o contador na UI
 }
 
 function registerTag() {
@@ -621,17 +626,29 @@ function deleteTag(tagId) {
 function updateStats() {
   // Update connection status
   const connectionStatus = document.getElementById('connectionStatus');
-  connectionStatus.textContent = 'Online';
-  connectionStatus.className = 'status-online';
+  if (connectionStatus) {
+    connectionStatus.textContent = 'Online';
+    connectionStatus.className = 'status-online';
+  }
   
   // Update room status
   const roomStatus = document.getElementById('roomStatus');
-  roomStatus.textContent = isLocked ? 'Trancado' : 'Desbloqueado';
-  roomStatus.className = isLocked ? 'status-locked' : 'status-unlocked';
+  if (roomStatus) {
+    roomStatus.textContent = isLocked ? 'Trancado' : 'Desbloqueado';
+    roomStatus.className = isLocked ? 'status-locked' : 'status-unlocked';
+  }
   
   // Update last access time
   const lastAccess = document.getElementById('lastAccess');
-  lastAccess.textContent = 'Último acesso: ' + formatRelativeTime(new Date());
+  if (lastAccess) {
+    lastAccess.textContent = 'Último acesso: ' + formatRelativeTime(new Date());
+  }
+
+  // Update today access count
+  const todayAccessElement = document.getElementById('todayAccess');
+  if (todayAccessElement) {
+    todayAccessElement.textContent = todayAccessCount;
+  }
 }
 
 function updateActiveTags() {
@@ -985,6 +1002,8 @@ function syncData() {
   localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
   localStorage.setItem('activityData', JSON.stringify(activityData));
   localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+  localStorage.setItem('teachers', JSON.stringify(teachers)); // Salvar professores
+  localStorage.setItem('todayAccessCount', todayAccessCount.toString()); // Salvar contador de acessos
 }
 
 // Função para carregar dados do localStorage
@@ -993,7 +1012,8 @@ function loadData() {
   const savedTags = localStorage.getItem('registeredTags');
   const savedActivity = localStorage.getItem('activityData');
   const savedSchedule = localStorage.getItem('scheduleData');
-  const savedTeachers = localStorage.getItem('teachers'); // Novo: carregar professores
+  const savedTeachers = localStorage.getItem('teachers');
+  const savedTodayAccessCount = localStorage.getItem('todayAccessCount'); // Novo: carregar contador de acessos
 
   if (savedLaboratories) {
     laboratories = JSON.parse(savedLaboratories);
@@ -1014,8 +1034,12 @@ function loadData() {
     scheduleData = JSON.parse(JSON.stringify(initialScheduleData));
   }
 
-  if (savedTeachers) { // Novo: carregar professores
+  if (savedTeachers) {
     teachers = JSON.parse(savedTeachers);
+  }
+
+  if (savedTodayAccessCount) { // Novo: carregar contador de acessos
+    todayAccessCount = parseInt(savedTodayAccessCount);
   }
 }
 

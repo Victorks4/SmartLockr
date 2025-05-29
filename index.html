@@ -31,6 +31,13 @@
         position: relative;
         left: 250px;
       }
+      /* Estilo temporário para garantir visibilidade dos inputs no modal de registro */
+      #registerTeacherModal input.form-control {
+        min-width: 250px; /* Garante uma largura mínima */
+        min-height: 38px; /* Garante uma altura mínima (padrão do Bootstrap) */
+        border: 1px solid #ced4da; /* Adiciona uma borda para visibilidade */
+        padding: .375rem .75rem; /* Adiciona padding */
+      }
     </style>
   </head>
 
@@ -187,6 +194,10 @@
                   <i class="bi bi-person-plus-fill me-2"></i>
                   Alterar Professor
                 </button>
+                <button class="btn btn-primary" onclick="registerTeacherModal()">
+                  <i class="bi bi-person-plus-fill me-2"></i>
+                  Registrar Professor
+                </button>
                 <button class="btn btn-danger" onclick="removeTeacher()">
                   <i class="bi bi-person-x-fill me-2"></i>
                   Remover Professor
@@ -337,6 +348,42 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             <button type="button" class="btn btn-primary" onclick="confirmTeacherChange()">Confirmar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Registro de Professor -->
+    <div class="modal fade" id="registerTeacherModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Registrar Novo Professor</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="registerTeacherForm">
+              <div class="mb-3">
+                <label for="registerTeacherName" class="form-label">Nome do Professor</label>
+                <input type="text" class="form-control" id="registerTeacherName" placeholder="Qual é o seu nome?" required>
+              </div>
+              <div class="mb-3">
+                <label for="registerTeacherCoordinator" class="form-label">Coordenador</label>
+                <input type="text" class="form-control" id="registerTeacherCoordinator" placeholder="Qual é o seu coordenador?" required>
+              </div>
+              <div class="mb-3">
+                <label for="registerTeacherRFID" class="form-label">ID RFID</label>
+                <input type="text" class="form-control" id="registerTeacherRFID" placeholder="Qual é o seu RFID?" required>
+              </div>
+              <div class="mb-3">
+                <label for="registerTeacherSubject" class="form-label">Matéria</label>
+                <input type="text" class="form-control" id="registerTeacherSubject" placeholder="Quais matérias você leciona?" required>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" onclick="confirmRegisterTeacher()">Registrar</button>
           </div>
         </div>
       </div>

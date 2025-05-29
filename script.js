@@ -312,6 +312,71 @@ function changeTeacher() {
   modal.show();
 }
 
+// Função para abrir o modal de registro de professor
+function registerTeacherModal() {
+  const modal = new bootstrap.Modal(document.getElementById('registerTeacherModal'));
+  modal.show();
+}
+
+// Função para confirmar o registro de um novo professor
+function confirmRegisterTeacher() {
+  const name = document.getElementById('registerTeacherName').value.trim();
+  const coordinator = document.getElementById('registerTeacherCoordinator').value.trim();
+  const rfid = document.getElementById('registerTeacherRFID').value.trim().toUpperCase();
+  const subject = document.getElementById('registerTeacherSubject').value.trim();
+
+  if (!name || !coordinator || !rfid || !subject) {
+    alert('Por favor, preencha todos os campos para registrar o professor.');
+    return;
+  }
+
+  // Verificar se o RFID já existe
+  if (teachers[rfid]) {
+    alert(`O ID RFID "${rfid}" já está registrado para o professor ${teachers[rfid].name}.`);
+    return;
+  }
+
+  // Adicionar o novo professor ao objeto teachers
+  teachers[rfid] = {
+    name: name,
+    rfid: rfid,
+    coordinator: coordinator, // Adiciona o coordenador
+    subjects: [subject] // Assumimos uma matéria inicial, pode ser expandido
+  };
+
+  // Adicionar a nova tag RFID à lista registeredTags
+  registeredTags.unshift({
+    id: rfid,
+    name: name,
+    lastUsed: new Date().toLocaleString(),
+    status: 'Active',
+    type: 'teacher'
+  });
+
+  // Atualizar a interface
+  populateTeacherSelect(); // Atualiza o select de professores no modal de alteração
+  loadRegisteredTags();    // Atualiza a tabela de tags registradas
+  updateActiveTags();      // Atualiza o contador de tags ativas
+
+  // Registrar a atividade
+  addActivity(
+    'success',
+    'Professor Registrado',
+    `Novo professor ${name} (Coordenador: ${coordinator}, RFID: ${rfid}) registrado com a matéria: ${subject}`,
+    'bi-person-plus-fill'
+  );
+
+  // Sincronizar dados
+  syncData();
+
+  // Fechar o modal
+  const modal = bootstrap.Modal.getInstance(document.getElementById('registerTeacherModal'));
+  modal.hide();
+
+  // Limpar o formulário
+  document.getElementById('registerTeacherForm').reset();
+}
+
 // Função para atualizar as opções de matérias baseado no professor selecionado
 function updateSubjectOptions() {
   const teacherSelect = document.getElementById('teacherSelect');
@@ -770,6 +835,10 @@ function initActivityPage() {
   // Iniciar relógio
   updateClock();
   setInterval(updateClock, 1000);
+
+  // Carregar e popular a tabela de tags e o select de professores na página de atividade
+  loadRegisteredTags();
+  populateTeacherSelect();
 }
 
 // Função para converter horário em minutos

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="pt">
   <head>
     <meta charset="UTF-8" />
@@ -375,9 +375,21 @@
                 <label for="registerTeacherRFID" class="form-label">ID RFID</label>
                 <input type="text" class="form-control" id="registerTeacherRFID" placeholder="Qual é o seu RFID?" required>
               </div>
+              <div id="subjectsContainer">
+                <div class="mb-3 subject-input-group">
+                  <label class="form-label">Matéria</label>
+                  <div class="input-group">
+                    <input type="text" class="form-control subject-input" placeholder="Qual matéria você leciona?" required>
+                    <button type="button" class="btn btn-outline-danger remove-subject" style="display: none;">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
               <div class="mb-3">
-                <label for="registerTeacherSubject" class="form-label">Matéria</label>
-                <input type="text" class="form-control" id="registerTeacherSubject" placeholder="Quais matérias você leciona?" required>
+                <button type="button" class="btn btn-outline-primary" id="addSubjectBtn">
+                  <i class="bi bi-plus-circle"></i> Adicionar Outra Matéria
+                </button>
               </div>
             </form>
           </div>

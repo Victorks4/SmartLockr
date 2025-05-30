@@ -138,11 +138,13 @@ const defaultTeachers = {
   'ICARO001': {
     name: 'Icaro Alvim',
     rfid: 'ICARO001',
+    coordinator: 'Coordenação de TI',
     subjects: ['Internet das Coisas', 'Programação de Apps', 'Análise de Dados']
   },
   'MOISES001': {
     name: 'Moises Lima',
     rfid: 'MOISES001',
+    coordinator: 'Coordenação de TI',
     subjects: ['Banco de Dados', 'Desenvolvimento de Sistemas', 'Lógica de Programação']
   }
 };
@@ -164,26 +166,23 @@ const defaultRegisteredTags = [
   }
 ];
 
-// Initialize dashboard
+// Adicionar event listeners quando o documento estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
-  loadData(); // Carrega os dados do localStorage
-  initializeDefaultDataIfEmpty(); // Inicializa com dados padrão se o localStorage estiver vazio
-  
+  // Carregar dados do localStorage
+  loadDataFromStorage();
+
+  // Inicializar a página
   const isActivityPage = window.location.pathname.includes('activity.html');
-  
   if (isActivityPage) {
     initActivityPage();
   } else {
-    // Initialize dashboard
     console.log('Smart Lock Dashboard initialized');
     loadActivityFeed();
     updateStats();
     startRealTimeSimulation();
     setInterval(updateTimestamps, 60000);
-  
-    // Atualizar informações do professor inicial
     updateTeacherInfo();
-    populateTeacherSelect(); // Popula o select de professores na página principal
+    populateTeacherSelect();
   }
 });
 
@@ -312,10 +311,83 @@ function changeTeacher() {
   modal.show();
 }
 
+// Função para adicionar um novo campo de matéria
+function addSubjectField() {
+  const container = document.getElementById('subjectsContainer');
+  if (!container) return;
+
+  const newGroup = document.createElement('div');
+  newGroup.className = 'mb-3 subject-input-group';
+  newGroup.innerHTML = `
+    <label class="form-label">Matéria</label>
+    <div class="input-group">
+      <input type="text" class="form-control subject-input" placeholder="Qual matéria você leciona?" required>
+      <button type="button" class="btn btn-outline-danger remove-subject">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  `;
+
+  // Adicionar o novo grupo ao container
+  container.appendChild(newGroup);
+
+  // Mostrar botão de remover em todos os grupos exceto o primeiro
+  const removeButtons = document.querySelectorAll('.remove-subject');
+  removeButtons.forEach(button => {
+    button.style.display = removeButtons.length > 1 ? 'block' : 'none';
+  });
+
+  // Focar no novo campo
+  const newInput = newGroup.querySelector('.subject-input');
+  if (newInput) {
+    newInput.focus();
+  }
+}
+
+// Função para remover um campo de matéria
+function removeSubjectField(button) {
+  const group = button.closest('.subject-input-group');
+  if (!group) return;
+  
+  group.remove();
+
+  // Atualizar visibilidade dos botões de remover
+  const removeButtons = document.querySelectorAll('.remove-subject');
+  removeButtons.forEach(btn => {
+    btn.style.display = removeButtons.length > 1 ? 'block' : 'none';
+  });
+}
+
+// Função para obter todas as matérias do formulário
+function getSubjectsFromForm() {
+  const subjectInputs = document.querySelectorAll('.subject-input');
+  return Array.from(subjectInputs)
+    .map(input => input.value.trim())
+    .filter(subject => subject !== '');
+}
+
+// Função para inicializar os event listeners do modal de registro
+function initRegisterTeacherModal() {
+  const addSubjectBtn = document.getElementById('addSubjectBtn');
+  if (addSubjectBtn) {
+    addSubjectBtn.addEventListener('click', addSubjectField);
+  }
+
+  // Adicionar event listener para os botões de remover matéria
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-subject')) {
+      removeSubjectField(e.target.closest('.remove-subject'));
+    }
+  });
+}
+
 // Função para abrir o modal de registro de professor
 function registerTeacherModal() {
   const modal = new bootstrap.Modal(document.getElementById('registerTeacherModal'));
   modal.show();
+  
+  // Inicializar os event listeners quando o modal for aberto
+  initRegisterTeacherModal();
 }
 
 // Função para confirmar o registro de um novo professor
@@ -323,9 +395,9 @@ function confirmRegisterTeacher() {
   const name = document.getElementById('registerTeacherName').value.trim();
   const coordinator = document.getElementById('registerTeacherCoordinator').value.trim();
   const rfid = document.getElementById('registerTeacherRFID').value.trim().toUpperCase();
-  const subject = document.getElementById('registerTeacherSubject').value.trim();
+  const subjects = getSubjectsFromForm();
 
-  if (!name || !coordinator || !rfid || !subject) {
+  if (!name || !coordinator || !rfid || subjects.length === 0) {
     alert('Por favor, preencha todos os campos para registrar o professor.');
     return;
   }
@@ -340,8 +412,8 @@ function confirmRegisterTeacher() {
   teachers[rfid] = {
     name: name,
     rfid: rfid,
-    coordinator: coordinator, // Adiciona o coordenador
-    subjects: [subject] // Assumimos uma matéria inicial, pode ser expandido
+    coordinator: coordinator,
+    subjects: subjects
   };
 
   // Adicionar a nova tag RFID à lista registeredTags
@@ -353,21 +425,21 @@ function confirmRegisterTeacher() {
     type: 'teacher'
   });
 
+  // Sincronizar dados antes de atualizar a interface
+  syncData();
+
   // Atualizar a interface
-  populateTeacherSelect(); // Atualiza o select de professores no modal de alteração
-  loadRegisteredTags();    // Atualiza a tabela de tags registradas
-  updateActiveTags();      // Atualiza o contador de tags ativas
+  populateTeacherSelect();
+  loadRegisteredTags();
+  updateActiveTags();
 
   // Registrar a atividade
   addActivity(
     'success',
     'Professor Registrado',
-    `Novo professor ${name} (Coordenador: ${coordinator}, RFID: ${rfid}) registrado com a matéria: ${subject}`,
+    `Novo professor ${name} (Coordenador: ${coordinator}, RFID: ${rfid}) registrado com as matérias: ${subjects.join(', ')}`,
     'bi-person-plus-fill'
   );
-
-  // Sincronizar dados
-  syncData();
 
   // Fechar o modal
   const modal = bootstrap.Modal.getInstance(document.getElementById('registerTeacherModal'));
@@ -375,6 +447,13 @@ function confirmRegisterTeacher() {
 
   // Limpar o formulário
   document.getElementById('registerTeacherForm').reset();
+  // Remover campos extras de matérias
+  const container = document.getElementById('subjectsContainer');
+  while (container.children.length > 1) {
+    container.removeChild(container.lastChild);
+  }
+
+  console.log('Professor registrado com sucesso:', { rfid, name, subjects });
 }
 
 // Função para atualizar as opções de matérias baseado no professor selecionado
@@ -1066,83 +1145,147 @@ function getStatusBadgeClass(status) {
 
 // Função para sincronizar os dados entre as páginas
 function syncData() {
-  // Salvar dados no localStorage
-  localStorage.setItem('laboratories', JSON.stringify(laboratories));
-  localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
-  localStorage.setItem('activityData', JSON.stringify(activityData));
-  localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
-  localStorage.setItem('teachers', JSON.stringify(teachers)); // Salvar professores
-  localStorage.setItem('todayAccessCount', todayAccessCount.toString()); // Salvar contador de acessos
+  try {
+    localStorage.setItem('teachers', JSON.stringify(teachers));
+    localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
+    localStorage.setItem('laboratories', JSON.stringify(laboratories));
+    localStorage.setItem('activityData', JSON.stringify(activityData));
+    localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+    localStorage.setItem('todayAccessCount', todayAccessCount.toString());
+    
+    console.log('Dados sincronizados com sucesso:', {
+      teachers: Object.keys(teachers).length,
+      tags: registeredTags.length,
+      laboratories: Object.keys(laboratories).length
+    });
+  } catch (error) {
+    console.error('Erro ao sincronizar dados:', error);
+  }
 }
 
 // Função para carregar dados do localStorage
-function loadData() {
-  const savedLaboratories = localStorage.getItem('laboratories');
-  const savedTags = localStorage.getItem('registeredTags');
-  const savedActivity = localStorage.getItem('activityData');
-  const savedSchedule = localStorage.getItem('scheduleData');
-  const savedTeachers = localStorage.getItem('teachers');
-  const savedTodayAccessCount = localStorage.getItem('todayAccessCount'); // Novo: carregar contador de acessos
+function loadDataFromStorage() {
+  try {
+    // Carregar professores do localStorage
+    const savedTeachers = localStorage.getItem('teachers');
+    if (savedTeachers) {
+      // Mesclar professores salvos com os padrões
+      const savedTeachersObj = JSON.parse(savedTeachers);
+      teachers = { ...defaultTeachers, ...savedTeachersObj };
+    } else {
+      // Se não houver professores salvos, usar apenas os padrões
+      teachers = JSON.parse(JSON.stringify(defaultTeachers));
+    }
 
-  if (savedLaboratories) {
-    laboratories = JSON.parse(savedLaboratories);
-  }
-  
-  if (savedTags) {
-    registeredTags = JSON.parse(savedTags);
-  }
-  
-  if (savedActivity) {
-    activityData = JSON.parse(savedActivity);
-  }
-  
-  if (savedSchedule) {
-    scheduleData = JSON.parse(savedSchedule);
-  } else {
-    // If no saved schedule, re-initialize with a deep copy of the default
-    scheduleData = JSON.parse(JSON.stringify(initialScheduleData));
-  }
+    // Carregar tags registradas
+    const savedTags = localStorage.getItem('registeredTags');
+    if (savedTags) {
+      // Mesclar tags salvas com as padrões
+      const savedTagsArray = JSON.parse(savedTags);
+      const defaultTagsIds = defaultRegisteredTags.map(tag => tag.id);
+      registeredTags = [
+        ...defaultRegisteredTags,
+        ...savedTagsArray.filter(tag => !defaultTagsIds.includes(tag.id))
+      ];
+    } else {
+      registeredTags = JSON.parse(JSON.stringify(defaultRegisteredTags));
+    }
 
-  if (savedTeachers) {
-    teachers = JSON.parse(savedTeachers);
-  }
+    // Carregar outros dados
+    const savedLaboratories = localStorage.getItem('laboratories');
+    if (savedLaboratories) {
+      laboratories = JSON.parse(savedLaboratories);
+    }
 
-  if (savedTodayAccessCount) { // Novo: carregar contador de acessos
-    todayAccessCount = parseInt(savedTodayAccessCount);
+    const savedActivity = localStorage.getItem('activityData');
+    if (savedActivity) {
+      activityData = JSON.parse(savedActivity);
+    }
+
+    const savedSchedule = localStorage.getItem('scheduleData');
+    if (savedSchedule) {
+      scheduleData = JSON.parse(savedSchedule);
+    } else {
+      scheduleData = JSON.parse(JSON.stringify(initialScheduleData));
+    }
+
+    const savedTodayAccessCount = localStorage.getItem('todayAccessCount');
+    if (savedTodayAccessCount) {
+      todayAccessCount = parseInt(savedTodayAccessCount);
+    }
+
+    console.log('Dados carregados com sucesso:', {
+      professoresPadrao: Object.keys(defaultTeachers).length,
+      professoresSalvos: Object.keys(teachers).length,
+      tags: registeredTags.length
+    });
+  } catch (error) {
+    console.error('Erro ao carregar dados:', error);
+    initializeDefaultDataIfEmpty();
   }
 }
 
 // Função para inicializar dados padrão se o localStorage estiver vazio
 function initializeDefaultDataIfEmpty() {
-  if (!localStorage.getItem('teachers')) {
-    teachers = JSON.parse(JSON.stringify(defaultTeachers));
-    localStorage.setItem('teachers', JSON.stringify(teachers));
-  }
-  if (!localStorage.getItem('registeredTags')) {
-    registeredTags = JSON.parse(JSON.stringify(defaultRegisteredTags));
-    localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
-  }
+  // Sempre inicializar com os professores padrão
+  teachers = JSON.parse(JSON.stringify(defaultTeachers));
+  registeredTags = JSON.parse(JSON.stringify(defaultRegisteredTags));
+  
+  // Salvar no localStorage
+  localStorage.setItem('teachers', JSON.stringify(teachers));
+  localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
+  
+  // Inicializar outros dados se necessário
   if (!localStorage.getItem('scheduleData')) {
     scheduleData = JSON.parse(JSON.stringify(initialScheduleData));
     localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
   }
-  // Outros dados (laboratories, activityData) são inicializados como vazios e preenchidos conforme uso
-  // ou podem ser inicializados aqui se houver um default para eles também.
+  
+  if (!localStorage.getItem('laboratories')) {
+    laboratories = {
+      1: { teacher: null, isLocked: false, assignedClass: null },
+      2: { teacher: null, isLocked: false, assignedClass: null },
+      3: { teacher: null, isLocked: false, assignedClass: null },
+      4: { teacher: null, isLocked: false, assignedClass: null },
+      5: { teacher: null, isLocked: false, assignedClass: null },
+      6: { teacher: null, isLocked: false, assignedClass: null },
+      7: { teacher: null, isLocked: false, assignedClass: null },
+      8: { teacher: null, isLocked: false, assignedClass: null },
+      9: { teacher: null, isLocked: false, assignedClass: null },
+      10: { teacher: null, isLocked: false, assignedClass: null }
+    };
+    localStorage.setItem('laboratories', JSON.stringify(laboratories));
+  }
 }
 
 // Função para popular o select de professores no modal
 function populateTeacherSelect() {
   const teacherSelect = document.getElementById('teacherSelect');
-  if (teacherSelect) {
-    teacherSelect.innerHTML = '<option value="">Selecione um professor...</option>';
-    for (const rfid in teachers) {
-      const teacher = teachers[rfid];
-      const option = document.createElement('option');
-      option.value = teacher.rfid;
-      option.textContent = teacher.name;
-      teacherSelect.appendChild(option);
-    }
+  if (!teacherSelect) {
+    console.log('Select de professores não encontrado');
+    return;
   }
+
+  // Limpar opções existentes
+  teacherSelect.innerHTML = '<option value="">Selecione um professor...</option>';
+
+  // Adicionar professores ao select
+  Object.values(teachers).forEach(teacher => {
+    const option = document.createElement('option');
+    option.value = teacher.rfid;
+    option.textContent = `${teacher.name} (${teacher.rfid})`;
+    teacherSelect.appendChild(option);
+  });
+
+  // Se houver um professor selecionado no laboratório atual, selecioná-lo
+  const currentLab = laboratories[currentLaboratory];
+  if (currentLab && currentLab.teacher) {
+    teacherSelect.value = currentLab.teacher.rfid;
+    // Atualizar as opções de matérias
+    updateSubjectOptions();
+  }
+
+  console.log('Select de professores atualizado:', Object.keys(teachers).length, 'professores');
 }
 
 // Função para atualizar o professor no laboratório baseado no cronograma

@@ -1185,7 +1185,6 @@ function getStatusBadgeClass(status) {
 // Função para sincronizar os dados entre as páginas
 function syncData() {
   try {
-    // Salvar todos os dados no localStorage
     localStorage.setItem('teachers', JSON.stringify(teachers));
     localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
     localStorage.setItem('laboratories', JSON.stringify(laboratories));
@@ -1193,71 +1192,89 @@ function syncData() {
     localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
     localStorage.setItem('todayAccessCount', todayAccessCount.toString());
     
-    // Forçar atualização do cronograma na página de atividade
-    localStorage.setItem('forceUpdateSchedule', 'true');
-    
-    console.log('Dados sincronizados com sucesso:', {
+    console.log('Dados sincronizados com localStorage:', {
       professores: Object.keys(teachers).length,
       tags: registeredTags.length,
-      laboratorios: Object.keys(laboratories).length
+      laboratorios: Object.keys(laboratories).length,
+      atividades: activityData.length,
+      cronograma: Object.keys(scheduleData).length,
+      acessosHoje: todayAccessCount
     });
   } catch (error) {
-    console.error('Erro ao sincronizar dados:', error);
+    console.error('Erro ao sincronizar dados com localStorage:', error);
   }
 }
 
 // Função para carregar dados do localStorage
 function loadDataFromStorage() {
   try {
-    // Carregar professores do localStorage
     const savedTeachers = localStorage.getItem('teachers');
-    if (savedTeachers) {
-      teachers = JSON.parse(savedTeachers);
-    } else {
-      teachers = JSON.parse(JSON.stringify(defaultTeachers));
-    }
+    teachers = savedTeachers ? JSON.parse(savedTeachers) : JSON.parse(JSON.stringify(defaultTeachers));
 
-    // Carregar tags registradas
     const savedTags = localStorage.getItem('registeredTags');
-    if (savedTags) {
-      registeredTags = JSON.parse(savedTags);
-    } else {
-      registeredTags = JSON.parse(JSON.stringify(defaultRegisteredTags));
-    }
+    registeredTags = savedTags ? JSON.parse(savedTags) : JSON.parse(JSON.stringify(defaultRegisteredTags));
+    // Assegurar que as datas em registeredTags sejam objetos Date após carregar do JSON
+    registeredTags.forEach(tag => {
+      if (tag.lastUsed && typeof tag.lastUsed === 'string') {
+        tag.lastUsed = new Date(tag.lastUsed).toLocaleString();
+      }
+    });
 
-    // Carregar outros dados
     const savedLaboratories = localStorage.getItem('laboratories');
     if (savedLaboratories) {
       laboratories = JSON.parse(savedLaboratories);
+      // Precisamos garantir que a referência do professor em laboratories aponte para o objeto em teachers
+      Object.values(laboratories).forEach(lab => {
+        if (lab.teacher && lab.teacher.rfid && teachers[lab.teacher.rfid]) {
+          lab.teacher = teachers[lab.teacher.rfid]; // Atualiza para a referência correta
+        } else if (lab.teacher) { // Se o professor no laboratório não existe mais em teachers
+          lab.teacher = null;
+          lab.assignedClass = null;
+        }
+      });
+    } else {
+      // Inicializa laboratories se não existir no localStorage
+      laboratories = {
+        1: { teacher: null, isLocked: false, assignedClass: null },
+        2: { teacher: null, isLocked: false, assignedClass: null },
+        3: { teacher: null, isLocked: false, assignedClass: null },
+        4: { teacher: null, isLocked: false, assignedClass: null },
+        5: { teacher: null, isLocked: false, assignedClass: null },
+        6: { teacher: null, isLocked: false, assignedClass: null },
+        7: { teacher: null, isLocked: false, assignedClass: null },
+        8: { teacher: null, isLocked: false, assignedClass: null },
+        9: { teacher: null, isLocked: false, assignedClass: null },
+        10: { teacher: null, isLocked: false, assignedClass: null }
+      };
     }
 
     const savedActivity = localStorage.getItem('activityData');
-    if (savedActivity) {
-      activityData = JSON.parse(savedActivity);
-    }
-
-    const savedSchedule = localStorage.getItem('scheduleData');
-    if (savedSchedule) {
-      scheduleData = JSON.parse(savedSchedule);
-    } else {
-      scheduleData = JSON.parse(JSON.stringify(initialScheduleData));
-    }
-
-    const savedTodayAccessCount = localStorage.getItem('todayAccessCount');
-    if (savedTodayAccessCount) {
-      todayAccessCount = parseInt(savedTodayAccessCount);
-    }
-
-    console.log('Dados carregados com sucesso:', {
-      professores: Object.keys(teachers).length,
-      tags: registeredTags.length,
-      laboratorios: Object.keys(laboratories).length
+    activityData = savedActivity ? JSON.parse(savedActivity) : [];
+    // Assegurar que timestamps em activityData sejam objetos Date
+     activityData.forEach(activity => {
+      if (activity.timestamp && typeof activity.timestamp === 'string') {
+        activity.timestamp = new Date(activity.timestamp);
+      }
     });
 
-    // Carregar tags registradas após carregar todos os dados
-    loadRegisteredTags();
+    const savedSchedule = localStorage.getItem('scheduleData');
+    scheduleData = savedSchedule ? JSON.parse(savedSchedule) : JSON.parse(JSON.stringify(initialScheduleData));
+
+    const savedTodayAccessCount = localStorage.getItem('todayAccessCount');
+    todayAccessCount = savedTodayAccessCount ? parseInt(savedTodayAccessCount) : 0;
+
+    console.log('Dados carregados do localStorage com sucesso.');
+
+    // É importante chamar loadRegisteredTags e populateTeacherSelect APÓS carregar teachers
+    if (!window.location.pathname.includes('activity.html')) { // Evitar chamar em activity.html se não necessário
+        loadRegisteredTags();
+        populateTeacherSelect();
+        updateTeacherInfo(); // Garante que o professor do laboratório atual seja exibido corretamente
+    }
+
   } catch (error) {
-    console.error('Erro ao carregar dados:', error);
+    console.error('Erro ao carregar dados do localStorage:', error);
+    // Se houver erro, reinicializa com os dados padrão para evitar que a aplicação quebre
     initializeDefaultDataIfEmpty();
   }
 }
@@ -1485,15 +1502,19 @@ function confirmEditTeacher(oldRfid) {
     return;
   }
 
-  // Verificar se o novo RFID já existe (exceto para o próprio professor)
   if (newRfid !== oldRfid && teachers[newRfid]) {
     alert(`O ID RFID "${newRfid}" já está registrado para outro professor.`);
     return;
   }
 
-  // Atualizar dados do professor
-  const oldTeacher = teachers[oldRfid];
-  delete teachers[oldRfid];
+  const oldTeacherData = teachers[oldRfid]; // Guardar dados antigos para atualização do schedule
+
+  // Remover o professor antigo se o RFID mudou
+  if (oldRfid !== newRfid) {
+    delete teachers[oldRfid];
+  }
+
+  // Atualizar ou adicionar o professor com o novo RFID
   teachers[newRfid] = {
     name: name,
     rfid: newRfid,
@@ -1505,28 +1526,41 @@ function confirmEditTeacher(oldRfid) {
   const tagIndex = registeredTags.findIndex(tag => tag.id === oldRfid);
   if (tagIndex !== -1) {
     registeredTags[tagIndex] = {
+      ...registeredTags[tagIndex], // Manter outros dados da tag se houver
       id: newRfid,
       name: name,
-      lastUsed: new Date().toLocaleString(),
-      status: 'Active',
+      lastUsed: new Date().toLocaleString(), // Atualizar lastUsed
+      status: 'Active', // Garantir que o status esteja ativo
       type: 'teacher'
     };
+  } else {
+    // Se a tag antiga não existia (caso raro), adiciona uma nova
+     registeredTags.unshift({
+        id: newRfid,
+        name: name,
+        lastUsed: new Date().toLocaleString(),
+        status: 'Active',
+        type: 'teacher'
+      });
   }
 
   // Atualizar referências em laboratórios
   Object.keys(laboratories).forEach(labId => {
     const lab = laboratories[labId];
     if (lab.teacher && lab.teacher.rfid === oldRfid) {
-      lab.teacher = teachers[newRfid];
+      lab.teacher = teachers[newRfid]; // Atualiza para o novo objeto professor
+      if (lab.assignedClass && lab.assignedClass.teacherName === oldTeacherData.name) {
+        lab.assignedClass.teacherName = name; // Atualiza o nome do professor na aula atribuída
+      }
     }
   });
 
-  // Atualizar referências no cronograma
+  // Atualizar referências no cronograma (scheduleData)
   Object.keys(scheduleData).forEach(day => {
     Object.keys(scheduleData[day]).forEach(shift => {
       scheduleData[day][shift].forEach(lesson => {
-        if (lesson.teacher === oldTeacher.name) {
-          lesson.teacher = name;
+        if (lesson.teacher === oldTeacherData.name) { // Comparar pelo nome antigo
+          lesson.teacher = name; // Atualizar para o novo nome
         }
       });
     });
@@ -1535,10 +1569,8 @@ function confirmEditTeacher(oldRfid) {
   // Atualizar interface
   populateTeacherSelect();
   loadRegisteredTags();
-  updateActiveTags();
   updateTeacherInfo();
 
-  // Registrar atividade
   addActivity(
     'info',
     'Professor Atualizado',
@@ -1546,30 +1578,42 @@ function confirmEditTeacher(oldRfid) {
     'bi-pencil-fill'
   );
 
-  // Sincronizar dados
   syncData();
 
-  // Fechar modal
   const modal = bootstrap.Modal.getInstance(document.getElementById('editTeacherModal'));
-  modal.hide();
+  if (modal) {
+    modal.hide();
+  }
+
+  // Forçar atualização do cronograma na página de atividade, se ela existir
+  if (window.location.pathname.includes('activity.html')) {
+    updateSchedule();
+  } else {
+    localStorage.setItem('forceUpdateSchedule', 'true');
+  }
 }
 
 // Função para excluir um professor
 function deleteTeacher(rfid) {
   const teacher = teachers[rfid];
-  if (!teacher) return;
-
-  if (!confirm(`Tem certeza que deseja excluir o professor ${teacher.name}? Esta ação não pode ser desfeita.`)) {
+  if (!teacher) {
+    console.warn(`Tentativa de excluir professor com RFID ${rfid} não encontrado.`);
     return;
   }
 
-  // Remover professor
+  if (!confirm(`Tem certeza que deseja excluir o professor ${teacher.name} (${rfid})? Esta ação removerá todas as suas informações e aulas agendadas.`)) {
+    return;
+  }
+
+  const teacherName = teacher.name; // Guardar o nome para usar na remoção do schedule
+
+  // 1. Remover professor do objeto `teachers`
   delete teachers[rfid];
 
-  // Remover tag RFID
+  // 2. Remover tag RFID da lista `registeredTags`
   registeredTags = registeredTags.filter(tag => tag.id !== rfid);
 
-  // Remover referências em laboratórios
+  // 3. Remover professor dos laboratórios e suas aulas atribuídas
   Object.keys(laboratories).forEach(labId => {
     const lab = laboratories[labId];
     if (lab.teacher && lab.teacher.rfid === rfid) {
@@ -1578,32 +1622,45 @@ function deleteTeacher(rfid) {
     }
   });
 
-  // Remover aulas do cronograma
+  // 4. Remover todas as aulas do professor no `scheduleData`
   Object.keys(scheduleData).forEach(day => {
     Object.keys(scheduleData[day]).forEach(shift => {
-      scheduleData[day][shift] = scheduleData[day][shift].filter(lesson => lesson.teacher !== teacher.name);
+      scheduleData[day][shift] = scheduleData[day][shift].filter(
+        lesson => lesson.teacher !== teacherName // Filtra pelo nome do professor
+      );
     });
   });
 
   // Atualizar interface
   populateTeacherSelect();
   loadRegisteredTags();
-  updateActiveTags();
   updateTeacherInfo();
 
-  // Registrar atividade
   addActivity(
-    'warning',
+    'danger',
     'Professor Excluído',
-    `Professor ${teacher.name} (${rfid}) foi excluído do sistema`,
+    `Professor ${teacherName} (${rfid}) foi excluído do sistema. Todas as suas aulas foram removidas.`,
     'bi-trash-fill'
   );
 
-  // Sincronizar dados
+  // 5. Salvar todas as alterações no localStorage
   syncData();
 
   // Forçar atualização do cronograma na página de atividade
-  localStorage.setItem('forceUpdateSchedule', 'true');
+  if (window.location.pathname.includes('activity.html')) {
+    updateSchedule();
+  } else {
+    localStorage.setItem('forceUpdateSchedule', 'true');
+  }
+
+  // Se o professor excluído era o professor atual do laboratório selecionado, limpar os campos
+  const currentLab = laboratories[currentLaboratory];
+  if (!currentLab || !currentLab.teacher || currentLab.teacher.rfid === rfid) {
+     const currentTeacherEl = document.getElementById('currentTeacher');
+     const currentRFIDEl = document.getElementById('currentRFID');
+     if(currentTeacherEl) currentTeacherEl.textContent = 'Não definido';
+     if(currentRFIDEl) currentRFIDEl.textContent = '-';
+  }
 }
 
 // Export functions for testing (if needed)

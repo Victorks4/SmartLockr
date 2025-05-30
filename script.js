@@ -714,7 +714,31 @@ function clearActivity() {
 // Tags management
 function loadRegisteredTags() {
   const tagsTable = document.getElementById('tagsTable');
-  if (!tagsTable) return;
+  if (!tagsTable) {
+    console.log('Tabela de tags não encontrada');
+    return;
+  }
+
+  // Garantir que todos os professores estejam nas tags registradas
+  Object.values(teachers).forEach(teacher => {
+    const tagExists = registeredTags.some(tag => tag.id === teacher.rfid);
+    if (!tagExists) {
+      registeredTags.push({
+        id: teacher.rfid,
+        name: teacher.name,
+        lastUsed: new Date().toLocaleString(),
+        status: 'Active',
+        type: 'teacher'
+      });
+    }
+  });
+
+  // Ordenar tags: professores primeiro, depois alunos
+  registeredTags.sort((a, b) => {
+    if (a.type === 'teacher' && b.type !== 'teacher') return -1;
+    if (a.type !== 'teacher' && b.type === 'teacher') return 1;
+    return a.name.localeCompare(b.name);
+  });
   
   tagsTable.innerHTML = registeredTags.map(tag => `
     <tr>
@@ -733,16 +757,31 @@ function loadRegisteredTags() {
       </td>
       <td>
         <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-primary" onclick="editTag('${tag.id}')">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-outline-danger" onclick="deleteTag('${tag.id}')">
-            <i class="bi bi-trash"></i>
-          </button>
+          ${tag.type === 'teacher' ? `
+            <button class="btn btn-outline-primary" onclick="editTeacher('${tag.id}')">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger" onclick="deleteTeacher('${tag.id}')">
+              <i class="bi bi-trash"></i>
+            </button>
+          ` : `
+            <button class="btn btn-outline-primary" onclick="editTag('${tag.id}')">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger" onclick="deleteTag('${tag.id}')">
+              <i class="bi bi-trash"></i>
+            </button>
+          `}
         </div>
       </td>
     </tr>
   `).join('');
+
+  console.log('Tags carregadas:', {
+    total: registeredTags.length,
+    professores: registeredTags.filter(tag => tag.type === 'teacher').length,
+    alunos: registeredTags.filter(tag => tag.type !== 'teacher').length
+  });
 }
 
 function editTag(tagId) {
@@ -1146,6 +1185,7 @@ function getStatusBadgeClass(status) {
 // Função para sincronizar os dados entre as páginas
 function syncData() {
   try {
+    // Salvar todos os dados no localStorage
     localStorage.setItem('teachers', JSON.stringify(teachers));
     localStorage.setItem('registeredTags', JSON.stringify(registeredTags));
     localStorage.setItem('laboratories', JSON.stringify(laboratories));
@@ -1153,10 +1193,13 @@ function syncData() {
     localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
     localStorage.setItem('todayAccessCount', todayAccessCount.toString());
     
+    // Forçar atualização do cronograma na página de atividade
+    localStorage.setItem('forceUpdateSchedule', 'true');
+    
     console.log('Dados sincronizados com sucesso:', {
-      teachers: Object.keys(teachers).length,
+      professores: Object.keys(teachers).length,
       tags: registeredTags.length,
-      laboratories: Object.keys(laboratories).length
+      laboratorios: Object.keys(laboratories).length
     });
   } catch (error) {
     console.error('Erro ao sincronizar dados:', error);
@@ -1169,24 +1212,15 @@ function loadDataFromStorage() {
     // Carregar professores do localStorage
     const savedTeachers = localStorage.getItem('teachers');
     if (savedTeachers) {
-      // Mesclar professores salvos com os padrões
-      const savedTeachersObj = JSON.parse(savedTeachers);
-      teachers = { ...defaultTeachers, ...savedTeachersObj };
+      teachers = JSON.parse(savedTeachers);
     } else {
-      // Se não houver professores salvos, usar apenas os padrões
       teachers = JSON.parse(JSON.stringify(defaultTeachers));
     }
 
     // Carregar tags registradas
     const savedTags = localStorage.getItem('registeredTags');
     if (savedTags) {
-      // Mesclar tags salvas com as padrões
-      const savedTagsArray = JSON.parse(savedTags);
-      const defaultTagsIds = defaultRegisteredTags.map(tag => tag.id);
-      registeredTags = [
-        ...defaultRegisteredTags,
-        ...savedTagsArray.filter(tag => !defaultTagsIds.includes(tag.id))
-      ];
+      registeredTags = JSON.parse(savedTags);
     } else {
       registeredTags = JSON.parse(JSON.stringify(defaultRegisteredTags));
     }
@@ -1215,10 +1249,13 @@ function loadDataFromStorage() {
     }
 
     console.log('Dados carregados com sucesso:', {
-      professoresPadrao: Object.keys(defaultTeachers).length,
-      professoresSalvos: Object.keys(teachers).length,
-      tags: registeredTags.length
+      professores: Object.keys(teachers).length,
+      tags: registeredTags.length,
+      laboratorios: Object.keys(laboratories).length
     });
+
+    // Carregar tags registradas após carregar todos os dados
+    loadRegisteredTags();
   } catch (error) {
     console.error('Erro ao carregar dados:', error);
     initializeDefaultDataIfEmpty();
@@ -1227,7 +1264,7 @@ function loadDataFromStorage() {
 
 // Função para inicializar dados padrão se o localStorage estiver vazio
 function initializeDefaultDataIfEmpty() {
-  // Sempre inicializar com os professores padrão
+  // Inicializar com os professores padrão
   teachers = JSON.parse(JSON.stringify(defaultTeachers));
   registeredTags = JSON.parse(JSON.stringify(defaultRegisteredTags));
   
@@ -1331,6 +1368,242 @@ function updateTeacherFromSchedule() {
   }
   
   syncData();
+}
+
+// Função para editar um professor
+function editTeacher(rfid) {
+  const teacher = teachers[rfid];
+  if (!teacher) return;
+
+  // Criar modal de edição
+  const modalHtml = `
+    <div class="modal fade" id="editTeacherModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar Professor</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="editTeacherForm">
+              <div class="mb-3">
+                <label class="form-label">Nome</label>
+                <input type="text" class="form-control" id="editTeacherName" value="${teacher.name}" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Coordenador</label>
+                <input type="text" class="form-control" id="editTeacherCoordinator" value="${teacher.coordinator}" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">RFID</label>
+                <input type="text" class="form-control" id="editTeacherRFID" value="${teacher.rfid}" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Matérias</label>
+                <div id="editSubjectsContainer">
+                  ${teacher.subjects.map((subject, index) => `
+                    <div class="mb-3 subject-input-group">
+                      <div class="input-group">
+                        <input type="text" class="form-control subject-input" value="${subject}" required>
+                        ${index > 0 ? `
+                          <button type="button" class="btn btn-outline-danger remove-subject">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+                <button type="button" class="btn btn-outline-primary mt-2" id="addEditSubjectBtn">
+                  <i class="bi bi-plus-circle"></i> Adicionar Outra Matéria
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" onclick="confirmEditTeacher('${rfid}')">Salvar Alterações</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Adicionar modal ao DOM
+  const modalContainer = document.createElement('div');
+  modalContainer.innerHTML = modalHtml;
+  document.body.appendChild(modalContainer);
+
+  // Inicializar modal
+  const modal = new bootstrap.Modal(document.getElementById('editTeacherModal'));
+  modal.show();
+
+  // Adicionar event listeners
+  document.getElementById('addEditSubjectBtn').addEventListener('click', () => {
+    const container = document.getElementById('editSubjectsContainer');
+    const newGroup = document.createElement('div');
+    newGroup.className = 'mb-3 subject-input-group';
+    newGroup.innerHTML = `
+      <div class="input-group">
+        <input type="text" class="form-control subject-input" placeholder="Qual matéria você leciona?" required>
+        <button type="button" class="btn btn-outline-danger remove-subject">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    `;
+    container.appendChild(newGroup);
+  });
+
+  // Event listener para remover matérias
+  document.getElementById('editSubjectsContainer').addEventListener('click', (e) => {
+    if (e.target.closest('.remove-subject')) {
+      const group = e.target.closest('.subject-input-group');
+      if (group) {
+        group.remove();
+      }
+    }
+  });
+
+  // Limpar modal quando fechado
+  document.getElementById('editTeacherModal').addEventListener('hidden.bs.modal', function () {
+    this.remove();
+  });
+}
+
+// Função para confirmar a edição do professor
+function confirmEditTeacher(oldRfid) {
+  const name = document.getElementById('editTeacherName').value.trim();
+  const coordinator = document.getElementById('editTeacherCoordinator').value.trim();
+  const newRfid = document.getElementById('editTeacherRFID').value.trim().toUpperCase();
+  const subjectInputs = document.querySelectorAll('#editSubjectsContainer .subject-input');
+  const subjects = Array.from(subjectInputs)
+    .map(input => input.value.trim())
+    .filter(subject => subject !== '');
+
+  if (!name || !coordinator || !newRfid || subjects.length === 0) {
+    alert('Por favor, preencha todos os campos.');
+    return;
+  }
+
+  // Verificar se o novo RFID já existe (exceto para o próprio professor)
+  if (newRfid !== oldRfid && teachers[newRfid]) {
+    alert(`O ID RFID "${newRfid}" já está registrado para outro professor.`);
+    return;
+  }
+
+  // Atualizar dados do professor
+  const oldTeacher = teachers[oldRfid];
+  delete teachers[oldRfid];
+  teachers[newRfid] = {
+    name: name,
+    rfid: newRfid,
+    coordinator: coordinator,
+    subjects: subjects
+  };
+
+  // Atualizar tag RFID
+  const tagIndex = registeredTags.findIndex(tag => tag.id === oldRfid);
+  if (tagIndex !== -1) {
+    registeredTags[tagIndex] = {
+      id: newRfid,
+      name: name,
+      lastUsed: new Date().toLocaleString(),
+      status: 'Active',
+      type: 'teacher'
+    };
+  }
+
+  // Atualizar referências em laboratórios
+  Object.keys(laboratories).forEach(labId => {
+    const lab = laboratories[labId];
+    if (lab.teacher && lab.teacher.rfid === oldRfid) {
+      lab.teacher = teachers[newRfid];
+    }
+  });
+
+  // Atualizar referências no cronograma
+  Object.keys(scheduleData).forEach(day => {
+    Object.keys(scheduleData[day]).forEach(shift => {
+      scheduleData[day][shift].forEach(lesson => {
+        if (lesson.teacher === oldTeacher.name) {
+          lesson.teacher = name;
+        }
+      });
+    });
+  });
+
+  // Atualizar interface
+  populateTeacherSelect();
+  loadRegisteredTags();
+  updateActiveTags();
+  updateTeacherInfo();
+
+  // Registrar atividade
+  addActivity(
+    'info',
+    'Professor Atualizado',
+    `Professor ${name} (${newRfid}) atualizado com sucesso`,
+    'bi-pencil-fill'
+  );
+
+  // Sincronizar dados
+  syncData();
+
+  // Fechar modal
+  const modal = bootstrap.Modal.getInstance(document.getElementById('editTeacherModal'));
+  modal.hide();
+}
+
+// Função para excluir um professor
+function deleteTeacher(rfid) {
+  const teacher = teachers[rfid];
+  if (!teacher) return;
+
+  if (!confirm(`Tem certeza que deseja excluir o professor ${teacher.name}? Esta ação não pode ser desfeita.`)) {
+    return;
+  }
+
+  // Remover professor
+  delete teachers[rfid];
+
+  // Remover tag RFID
+  registeredTags = registeredTags.filter(tag => tag.id !== rfid);
+
+  // Remover referências em laboratórios
+  Object.keys(laboratories).forEach(labId => {
+    const lab = laboratories[labId];
+    if (lab.teacher && lab.teacher.rfid === rfid) {
+      lab.teacher = null;
+      lab.assignedClass = null;
+    }
+  });
+
+  // Remover aulas do cronograma
+  Object.keys(scheduleData).forEach(day => {
+    Object.keys(scheduleData[day]).forEach(shift => {
+      scheduleData[day][shift] = scheduleData[day][shift].filter(lesson => lesson.teacher !== teacher.name);
+    });
+  });
+
+  // Atualizar interface
+  populateTeacherSelect();
+  loadRegisteredTags();
+  updateActiveTags();
+  updateTeacherInfo();
+
+  // Registrar atividade
+  addActivity(
+    'warning',
+    'Professor Excluído',
+    `Professor ${teacher.name} (${rfid}) foi excluído do sistema`,
+    'bi-trash-fill'
+  );
+
+  // Sincronizar dados
+  syncData();
+
+  // Forçar atualização do cronograma na página de atividade
+  localStorage.setItem('forceUpdateSchedule', 'true');
 }
 
 // Export functions for testing (if needed)

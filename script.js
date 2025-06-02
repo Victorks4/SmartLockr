@@ -1,5 +1,8 @@
 // Smart Lock IoT Dashboard JavaScript
 
+// IP do ESP32
+const ESP32_IP = '192.168.159.110';
+
 // Global variables
 let isLocked = false;
 let activityData = [];
@@ -183,11 +186,126 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateTimestamps, 60000);
     updateTeacherInfo();
     populateTeacherSelect();
+    // Iniciar o polling do status da porta a cada 3 segundos
+    setInterval(pollDoorStatus, 3000);
   }
 });
 
+// Função para fazer polling do status da porta do ESP32
+async function pollDoorStatus() {
+    const labId = currentLaboratory; 
+    try {
+        // Endpoint do ESP32 para status. Se o seu ESP32 não diferencia labs para o status,
+        // você pode remover `?lab=${labId}` ou o ESP32 pode simplesmente ignorá-lo.
+        // Para o código ESP32 que fornecemos, ele não usa `labId` na rota /status.
+        const response = await fetch(`http://${ESP32_IP.trim()}/status`); // .trim() adicionado ao IP para garantir
+
+        if (!response.ok) {
+            console.warn(`Erro ao buscar status do ESP32: ${response.status} ${response.statusText}`);
+            // Atualizar UI para mostrar que o ESP está offline ou com erro
+            const roomStatusElement = document.getElementById('roomStatus');
+            if (roomStatusElement) {
+                roomStatusElement.textContent = 'ESP Offline';
+                roomStatusElement.className = 'card-text status-offline';
+            }
+            // Poderia também desabilitar/alterar o botão lockBtn visualmente
+            return;
+        }
+        const data = await response.json();
+        console.log("Dados recebidos do ESP32:", data); // Bom para debug
+
+        // 'comando_acesso_liberado' vem do ESP32, que o obtém do Arduino
+        // true = Arduino deu comando para liberar
+        // false = Arduino deu comando para bloquear
+        const newIsLockedBasedOnCommand = !data.comando_acesso_liberado;
+
+        // Atualiza a UI apenas se o estado realmente mudou ou se o estado do lab não está sincronizado
+        if (newIsLockedBasedOnCommand !== isLocked || laboratories[currentLaboratory].isLocked !== newIsLockedBasedOnCommand) {
+            isLocked = newIsLockedBasedOnCommand;
+            laboratories[currentLaboratory].isLocked = isLocked; // Atualiza o estado do laboratório específico
+
+            const roomStatusElement = document.getElementById('roomStatus');
+            const lockBtnElement = document.getElementById('lockBtn'); // Renomeado para evitar conflito
+
+            if (roomStatusElement && lockBtnElement) {
+                if (isLocked) {
+                    roomStatusElement.textContent = 'Trancado';
+                    roomStatusElement.className = 'card-text status-locked';
+                    lockBtnElement.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Destrancar Laboratório'; // Ou apenas "Trancado" se não for clicável
+                    lockBtnElement.className = 'btn btn-danger'; // Ou uma classe de status
+                } else {
+                    roomStatusElement.textContent = 'Desbloqueado';
+                    roomStatusElement.className = 'card-text status-unlocked';
+                    lockBtnElement.innerHTML = '<i class="bi bi-unlock-fill me-2"></i>Trancar Laboratório'; // Ou apenas "Desbloqueado"
+                    lockBtnElement.className = 'btn btn-success'; // Ou uma classe de status
+
+                    // Só incrementa o contador de acesso se o comando foi para destravar e o estado anterior era trancado.
+                    // Para evitar incrementos múltiplos se a porta permanecer destrancada e o polling continuar.
+                    // Você pode precisar de uma lógica mais robusta para todayAccessCount se ele só deve contar uma vez por "evento de abertura".
+                    // A lógica atual em pollDoorStatus já incrementa 'todayAccessCount' na seção 'else' (quando isLocked se torna false)
+                    // E isso é chamado apenas se 'newIsLockedBasedOnCommand !== isLocked'.
+                    // Isso pode ser suficiente para contar cada transição para desbloqueado.
+                }
+            }
+            updateStats(); // Atualiza o contador de acessos na UI e outros status
+        }
+
+        // Registrar atividade baseada na ultima_acao_mensagem do ESP32
+        if (data.ultima_acao_mensagem && data.ultima_acao_mensagem !== "Aguardando status do Arduino...") {
+            // Lógica para evitar adicionar logs duplicados se o timestamp da última ação do ESP não mudou
+            const lastActivity = activityData.length > 0 ? activityData[0] : null;
+            if (!lastActivity || 
+                (lastActivity.metadata_timestamp_esp !== data.timestamp_ultima_acao || 
+                 lastActivity.description_key !== data.ultima_acao_mensagem) ) {
+
+                let activityType = 'info';
+                let icon = 'bi-info-circle-fill';
+
+                if (data.ultima_acao_mensagem.includes("Liberado")) {
+                    activityType = 'success';
+                    icon = data.estado_porta_fisica_aberta ? 'bi-door-open-fill' : 'bi-unlock-fill';
+                } else if (data.ultima_acao_mensagem.includes("Bloqueado")) {
+                    activityType = 'danger';
+                    icon = !data.estado_porta_fisica_aberta ? 'bi-lock-fill' : 'bi-shield-lock-fill';
+                } else if (data.ultima_acao_mensagem.includes("AVISO")) {
+                    activityType = 'warning';
+                    icon = 'bi-exclamation-triangle-fill';
+                } else if (data.ultimo_rfid && data.ultimo_rfid !== "Nenhum" && data.ultima_acao_mensagem.includes(data.ultimo_rfid)) {
+                    // Se a mensagem principal é sobre a detecção de RFID
+                    activityType = 'info';
+                    icon = 'bi-credit-card-fill';
+                }
+
+                let logDescription = data.ultima_acao_mensagem;
+                if (data.ultimo_rfid && data.ultimo_rfid !== "Nenhum" && !logDescription.includes(data.ultimo_rfid)) {
+                    logDescription += ` (RFID: ${data.ultimo_rfid})`;
+                }
+
+                addActivity(
+                    activityType,
+                    `Status ESP32 (Lab ${currentLaboratory})`,
+                    logDescription,
+                    icon,
+                    { metadata_timestamp_esp: data.timestamp_ultima_acao, description_key: data.ultima_acao_mensagem }
+                );
+            }
+        }
+        syncData();
+
+    } catch (error) {
+        console.error(`Erro ao fazer polling do status do ESP32 para Lab ${labId}:`, error);
+        const roomStatusElement = document.getElementById('roomStatus');
+        if (roomStatusElement) {
+            roomStatusElement.textContent = 'Offline ESP';
+            roomStatusElement.className = 'card-text status-offline';
+        }
+         // Talvez adicionar uma atividade de log para erro de conexão com ESP
+        // addActivity('danger', 'Erro de Conexão ESP', `Falha ao buscar status do ESP32: ${error.message}`, 'bi-wifi-off');
+    }
+}
+
 // Activity feed functions
-function addActivity(type, title, description, icon = 'bi-info-circle-fill') {
+function addActivity(type, title, description, icon = 'bi-info-circle-fill', metadata = null) {
   const timestamp = new Date();
   const activity = {
     id: Date.now(),
@@ -195,7 +313,8 @@ function addActivity(type, title, description, icon = 'bi-info-circle-fill') {
     title: title,
     description: description,
     icon: icon,
-    timestamp: timestamp
+    timestamp: timestamp,
+    ...metadata // Adiciona quaisquer metadados passados
   };
   
   activityData.unshift(activity);
@@ -206,7 +325,7 @@ function addActivity(type, title, description, icon = 'bi-info-circle-fill') {
   }
   
   renderActivityFeed();
-  updateStats();
+  // updateStats(); // updateStats é chamado dentro de pollDoorStatus após a lógica de isLocked
   
   console.log('New activity added:', activity);
 }
@@ -607,60 +726,92 @@ function removeTeacher() {
 
 // Room control functions
 function toggleLock() {
-  const lockBtn = document.getElementById('lockBtn');
-  const roomStatus = document.getElementById('roomStatus');
-  const lastAccess = document.getElementById('lastAccess');
-  
-  isLocked = !isLocked;
-  laboratories[currentLaboratory].isLocked = isLocked;
-  
-  if (isLocked) {
-    lockBtn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Destrancar Laboratório';
-    lockBtn.className = 'btn btn-danger';
-    roomStatus.textContent = 'Trancado';
-    roomStatus.className = 'card-text status-locked';
-    
-    addActivity('danger', 'Laboratório Trancado', 
-      `Laboratório ${currentLaboratory} foi trancado manualmente`, 
-      'bi-lock-fill');
-  } else {
-    lockBtn.innerHTML = '<i class="bi bi-unlock-fill me-2"></i>Trancar Laboratório';
-    lockBtn.className = 'btn btn-success';
-    roomStatus.textContent = 'Desbloqueado';
-    roomStatus.className = 'card-text status-unlocked';
-    
-    addActivity('success', 'Laboratório Destrancado', 
-      `Laboratório ${currentLaboratory} foi destrancado manualmente`, 
-      'bi-unlock-fill');
-    
-    // Incrementar o contador de acessos diários
-    todayAccessCount++;
-  }
-  
-  lastAccess.textContent = 'Último acesso: Agora mesmo';
-  syncData();
-  updateStats(); // Chamar updateStats para atualizar o contador na UI
+  console.warn("toggleLock foi chamado, mas o envio de comando para o ESP32 está desabilitado. O status é atualizado apenas via pollDoorStatus.");
+  addActivity('warning', 'Comando Desabilitado', 'O botão de trancar/destrancar está desabilitado. O status da porta é controlado pelo ESP32.', 'bi-exclamation-triangle-fill');
+  alert("O botão de trancar/destrancar está desabilitado. O status da porta é controlado pelo ESP32.");
 }
 
+// Função para lidar com eventos RFID recebidos do ESP32 (mantida para compatibilidade, mas o polling agora é o principal)
+// Esta função seria chamada se o ESP32 enviasse dados diretamente para o frontend (ex: via WebSockets ou um endpoint de webhook)
+function handleRFIDEvent(data) {
+  const { rfid, status, lab } = data;
+
+  // Registrar a tentativa de acesso (se o ESP32 enviar o RFID)
+  // Se o ESP32 apenas envia 0/1, esta parte pode ser removida ou adaptada
+  if (rfid) {
+    registerAccessAttempt(rfid);
+  }
+
+  // Encontrar a tag RFID nos dados registrados (se o RFID for enviado)
+  const detectedTag = rfid ? registeredTags.find(tag => tag.id === rfid) : null;
+
+  if (lab === currentLaboratory) {
+    // Atualizar o status da porta no UI com base no status do ESP32
+    const roomStatus = document.getElementById('roomStatus');
+    const lockBtn = document.getElementById('lockBtn');
+
+    const newIsLocked = (status === 0); // 0 para trancado, 1 para desbloqueado
+
+    if (newIsLocked !== isLocked) { // Apenas atualiza se o status mudou
+      isLocked = newIsLocked;
+      laboratories[currentLaboratory].isLocked = isLocked;
+
+      if (isLocked) {
+        roomStatus.textContent = 'Trancado';
+        roomStatus.className = 'card-text status-locked';
+        lockBtn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Destrancar Laboratório';
+        lockBtn.className = 'btn btn-danger';
+        addActivity('danger', 'Porta Trancada', `Porta do Laboratório ${lab} trancada${detectedTag ? ` por ${detectedTag.name} (${rfid})` : ''}`, 'bi-lock-fill');
+      } else {
+        roomStatus.textContent = 'Desbloqueado';
+        roomStatus.className = 'card-text status-unlocked';
+        lockBtn.innerHTML = '<i class="bi bi-unlock-fill me-2"></i>Trancar Laboratório';
+        lockBtn.className = 'btn btn-success';
+        addActivity('success', 'Porta Aberta', `Porta do Laboratório ${lab} aberta${detectedTag ? ` por ${detectedTag.name} (${rfid})` : ''}`, 'bi-door-open-fill');
+        todayAccessCount++;
+      }
+      updateStats();
+    }
+  } else {
+    // Se o ESP32 enviar RFID, mas para outro laboratório
+    if (rfid) {
+      addActivity('warning', 'RFID Detectado (Outro Lab)', `RFID ${rfid} detectado no Laboratório ${lab}, mas o laboratório atual é ${currentLaboratory}. Status: ${status}`, 'bi-exclamation-triangle-fill');
+    }
+  }
+  syncData();
+}
+
+// Função para registrar uma nova tag
 function registerTag() {
-  const tagId = 'RFID' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-  const userName = prompt('Enter user name for new RFID tag:');
+  const tagId = prompt('Por favor, insira o ID RFID da nova tag (ex: ABCD123):');
+  if (!tagId || tagId.trim() === '') {
+    alert('ID RFID inválido.');
+    return;
+  }
+  const userName = prompt('Por favor, insira o nome do usuário para a nova tag RFID:');
   
   if (userName && userName.trim()) {
     const newTag = {
-      id: tagId,
+      id: tagId.trim().toUpperCase(),
       name: userName.trim(),
       lastUsed: new Date().toLocaleString(),
-      status: 'Active'
+      status: 'Active',
+      type: 'student' // Assumindo que tags registradas manualmente são de alunos
     };
     
+    // Verificar se a tag já existe
+    if (registeredTags.some(tag => tag.id === newTag.id)) {
+      alert(`A tag RFID "${newTag.id}" já está registrada.`);
+      return;
+    }
+
     registeredTags.unshift(newTag);
     loadRegisteredTags();
     updateActiveTags();
     
-    addActivity('info', 'New Tag Registered', `RFID tag ${tagId} registered for ${userName}`, 'bi-plus-circle-fill');
+    addActivity('info', 'Nova Tag Registrada', `Tag RFID ${newTag.id} registrada para ${userName}`, 'bi-plus-circle-fill');
     
-    alert(`RFID tag ${tagId} has been registered for ${userName}`);
+    alert(`Tag RFID ${newTag.id} foi registrada para ${userName}`);
   }
 }
 

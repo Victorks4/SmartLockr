@@ -1,7 +1,7 @@
 // Smart Lock IoT Dashboard JavaScript
 
 // IP do ESP32
-const ESP32_IP = '192.168.159.110';
+const ESP32_IP = '192.168.178.110';
 
 // Global variables
 let isLocked = false;
@@ -248,6 +248,8 @@ async function pollDoorStatus() {
                 }
             }
             updateStats(); // Atualiza o contador de acessos na UI e outros status
+            updateTeacherInfo(); // Garante que as informações do professor sejam atualizadas
+            updateScheduleStatus(); // Garante que o cronograma seja atualizado
         }
 
         // Registrar atividade baseada na ultima_acao_mensagem do ESP32

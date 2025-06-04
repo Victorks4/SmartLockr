@@ -180,9 +180,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initActivityPage();
   } else {
     console.log('Smart Lock Dashboard initialized');
-    loadActivityFeed();
+    // loadActivityFeed(); // Removido: atividades de exemplo
     updateStats();
-    startRealTimeSimulation();
+    // startRealTimeSimulation(); // Removido: simulação de conexão e eventos
     setInterval(updateTimestamps, 60000);
     updateTeacherInfo();
     populateTeacherSelect();

@@ -1,73 +1,60 @@
-# Welcome to your Lovable project
+# SmartLockr 🛡️
 
-## Project info
+## 🎯 Visão Geral
 
-**URL**: https://lovable.dev/projects/2ed17703-c0dd-4bc5-a0b4-ab47e31ae0c8
+O **SmartLockr** é um sistema de controle de acesso para laboratórios baseado em IoT. Este projeto apresenta um dashboard web interativo para monitorar e gerenciar o acesso a múltiplos laboratórios utilizando tecnologia RFID e comunicação com um dispositivo ESP32. O sistema permite o cadastro de professores, associação de tags RFID, agendamento de aulas e acompanhamento das atividades em tempo real.
 
-## How can I edit this code?
+## ✨ Funcionalidades Principais
 
-There are several ways of editing your application.
+* 🚪 **Controle de Acesso:** Interface para trancar e destrancar laboratórios remotamente (via ESP32).
+* 👨‍🏫 **Gerenciamento de Professores:** Cadastro de professores com nome, ID RFID único e matérias associadas.
+* 🏷️ **Gestão de Tags RFID:** Registro e visualização de todas as tags RFID cadastradas no sistema.
+* 🏢 **Múltiplos Laboratórios:** Suporte para o gerenciamento individual do estado de até 10 laboratórios.
+* 🗓️ **Agendamento de Aulas:**
+    * Criação de um cronograma de aulas detalhado por dia da semana, turno, horário, laboratório, disciplina e professor responsável.
+    * Visualização clara do cronograma na página de atividades.
+* 📊 **Log de Atividades:** Registro de eventos importantes como acessos aos laboratórios, cadastro/exclusão de professores e alterações no estado das fechaduras.
+* 📈 **Contador de Acessos:** Monitoramento do número de acessos realizados no dia.
+* 🌐 **Interface Web:** Dashboard responsivo construído com HTML, CSS (Bootstrap) e JavaScript para fácil interação e visualização.
+* 💾 **Persistência de Dados:** Utilização do `localStorage` do navegador para salvar as configurações, cadastros e agendamentos.
 
-**Use Lovable**
+## 🛠️ Tecnologias Utilizadas
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2ed17703-c0dd-4bc5-a0b4-ab47e31ae0c8) and start prompting.
+* **Frontend:**
+    * HTML5
+    * CSS3 (com Bootstrap 5 e Bootstrap Icons)
+    * JavaScript (ES6+)
+* **Hardware (Comunicação):**
+    * ESP32 (endereço IP configurado: `192.168.178.110`) - *O código para o ESP32 não está neste repositório.*
+* **Armazenamento Local:**
+    * Browser `localStorage`
+* **Desenvolvimento:**
+    * `live-server`
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Como Executar (Frontend)
 
-**Use your preferred IDE**
+1.  Clone este repositório:
+    ```bash
+    git clone [https://github.com/seu-usuario/SmartLockr.git](https://github.com/seu-usuario/smart-room-guardian.git)
+    ```
+2.  Navegue até o diretório do projeto:
+    ```bash
+    cd SmartLockr
+    ```
+3.  Se você tiver o `live-server` instalado globalmente via npm, pode iniciar o projeto com:
+    ```bash
+    live-server
+    ```
+    Ou simplesmente abra o arquivo `index.html` diretamente no seu navegador.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+    *(Nota: Para a funcionalidade completa de controle da fechadura, um ESP32 configurado e rodando o código apropriado na rede local é necessário.)*
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🔮 Próximos Passos / Ideias Futuras (Opcional)
 
-Follow these steps:
+* [ ] Implementar autenticação de usuário para acesso ao dashboard.
+* [ ] Migrar o armazenamento de dados do `localStorage` para um backend com banco de dados (ex: Node.js + MongoDB/PostgreSQL).
+* [ ] Adicionar notificações em tempo real.
+* [ ] Desenvolver o código para o microcontrolador ESP32.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/2ed17703-c0dd-4bc5-a0b4-ab47e31ae0c8) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---

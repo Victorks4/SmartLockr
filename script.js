@@ -1,7 +1,23 @@
 // Smart Lock IoT Dashboard JavaScript
 
-// IP do ESP32
-const ESP32_IP = '192.168.178.110';
+// Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDC83QEfFVMK5Prxwp7de5UvxZeJnRmbEI",
+  authDomain: "site-54476.firebaseapp.com", // Substitua pelo seu Auth Domain
+  databaseURL: "https://site-54476-default-rtdb.firebaseio.com/",
+  projectId: "site-54476",
+  storageBucket: "site-54476.appspot.com", // Substitua pelo seu Storage Bucket
+  messagingSenderId: "SEU_MESSAGING_SENDER_ID", // Substitua pelo seu Messaging Sender ID
+  appId: "SEU_APP_ID", // Substitua pelo seu App ID
+  measurementId: "SEU_MEASUREMENT_ID" // Substitua pelo seu Measurement ID (se usar Analytics)
+};
+
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// IP do ESP32 (mantido para referência, mas o controle será via Firebase)
+const ESP32_IP = '192.168.127.188';
 
 // Global variables
 let isLocked = false;
@@ -186,124 +202,109 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateTimestamps, 60000);
     updateTeacherInfo();
     populateTeacherSelect();
-    // Iniciar o polling do status da porta a cada 3 segundos
-    setInterval(pollDoorStatus, 3000);
+    // Iniciar o listener do Firebase para o status da porta
+    listenForDoorStatusChanges();
   }
 });
 
-// Função para fazer polling do status da porta do ESP32
-async function pollDoorStatus() {
-    const labId = currentLaboratory; 
-    try {
-        // Endpoint do ESP32 para status. Se o seu ESP32 não diferencia labs para o status,
-        // você pode remover `?lab=${labId}` ou o ESP32 pode simplesmente ignorá-lo.
-        // Para o código ESP32 que fornecemos, ele não usa `labId` na rota /status.
-        const response = await fetch(`http://${ESP32_IP.trim()}/status`); // .trim() adicionado ao IP para garantir
+// Função para escutar mudanças no status da porta do Firebase
+function listenForDoorStatusChanges() {
+  // Assumindo que o status da porta está em 'laboratorios/labX/statusPorta'
+  // Onde 'labX' é o laboratório atual e 'statusPorta' é um booleano (true para trancado, false para destrancado)
+  const doorStatusRef = database.ref(`laboratorios/${currentLaboratory}/statusPorta`);
 
-        if (!response.ok) {
-            console.warn(`Erro ao buscar status do ESP32: ${response.status} ${response.statusText}`);
-            // Atualizar UI para mostrar que o ESP está offline ou com erro
-            const roomStatusElement = document.getElementById('roomStatus');
-            if (roomStatusElement) {
-                roomStatusElement.textContent = 'ESP Offline';
-                roomStatusElement.className = 'card-text status-offline';
-            }
-            // Poderia também desabilitar/alterar o botão lockBtn visualmente
-            return;
-        }
-        const data = await response.json();
-        console.log("Dados recebidos do ESP32:", data); // Bom para debug
+  doorStatusRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    console.log("Dados recebidos do Firebase:", data);
 
-        // 'comando_acesso_liberado' vem do ESP32, que o obtém do Arduino
-        // true = Arduino deu comando para liberar
-        // false = Arduino deu comando para bloquear
-        const newIsLockedBasedOnCommand = !data.comando_acesso_liberado;
+    if (data !== null && typeof data.isLocked === 'boolean') {
+      const newIsLocked = data.isLocked;
+      const ultimaAcaoMensagem = data.ultimaAcaoMensagem || '';
+      const ultimoRfid = data.ultimoRfid || 'Nenhum';
+      const timestampUltimaAcao = data.timestampUltimaAcao || Date.now();
 
-        // Atualiza a UI apenas se o estado realmente mudou ou se o estado do lab não está sincronizado
-        if (newIsLockedBasedOnCommand !== isLocked || laboratories[currentLaboratory].isLocked !== newIsLockedBasedOnCommand) {
-            isLocked = newIsLockedBasedOnCommand;
-            laboratories[currentLaboratory].isLocked = isLocked; // Atualiza o estado do laboratório específico
+      // Atualiza a UI apenas se o estado realmente mudou ou se o estado do lab não está sincronizado
+      if (newIsLocked !== isLocked || laboratories[currentLaboratory].isLocked !== newIsLocked) {
+        isLocked = newIsLocked;
+        laboratories[currentLaboratory].isLocked = isLocked; // Atualiza o estado do laboratório específico
 
-            const roomStatusElement = document.getElementById('roomStatus');
-            const lockBtnElement = document.getElementById('lockBtn'); // Renomeado para evitar conflito
-
-            if (roomStatusElement && lockBtnElement) {
-                if (isLocked) {
-                    roomStatusElement.textContent = 'Trancado';
-                    roomStatusElement.className = 'card-text status-locked';
-                    lockBtnElement.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Destrancar Laboratório'; // Ou apenas "Trancado" se não for clicável
-                    lockBtnElement.className = 'btn btn-danger'; // Ou uma classe de status
-                } else {
-                    roomStatusElement.textContent = 'Desbloqueado';
-                    roomStatusElement.className = 'card-text status-unlocked';
-                    lockBtnElement.innerHTML = '<i class="bi bi-unlock-fill me-2"></i>Trancar Laboratório'; // Ou apenas "Desbloqueado"
-                    lockBtnElement.className = 'btn btn-success'; // Ou uma classe de status
-
-                    // Só incrementa o contador de acesso se o comando foi para destravar e o estado anterior era trancado.
-                    // Para evitar incrementos múltiplos se a porta permanecer destrancada e o polling continuar.
-                    // Você pode precisar de uma lógica mais robusta para todayAccessCount se ele só deve contar uma vez por "evento de abertura".
-                    // A lógica atual em pollDoorStatus já incrementa 'todayAccessCount' na seção 'else' (quando isLocked se torna false)
-                    // E isso é chamado apenas se 'newIsLockedBasedOnCommand !== isLocked'.
-                    // Isso pode ser suficiente para contar cada transição para desbloqueado.
-                }
-            }
-            updateStats(); // Atualiza o contador de acessos na UI e outros status
-            updateTeacherInfo(); // Garante que as informações do professor sejam atualizadas
-            updateScheduleStatus(); // Garante que o cronograma seja atualizado
-        }
-
-        // Registrar atividade baseada na ultima_acao_mensagem do ESP32
-        if (data.ultima_acao_mensagem && data.ultima_acao_mensagem !== "Aguardando status do Arduino...") {
-            // Lógica para evitar adicionar logs duplicados se o timestamp da última ação do ESP não mudou
-            const lastActivity = activityData.length > 0 ? activityData[0] : null;
-            if (!lastActivity || 
-                (lastActivity.metadata_timestamp_esp !== data.timestamp_ultima_acao || 
-                 lastActivity.description_key !== data.ultima_acao_mensagem) ) {
-
-                let activityType = 'info';
-                let icon = 'bi-info-circle-fill';
-
-                if (data.ultima_acao_mensagem.includes("Liberado")) {
-                    activityType = 'success';
-                    icon = data.estado_porta_fisica_aberta ? 'bi-door-open-fill' : 'bi-unlock-fill';
-                } else if (data.ultima_acao_mensagem.includes("Bloqueado")) {
-                    activityType = 'danger';
-                    icon = !data.estado_porta_fisica_aberta ? 'bi-lock-fill' : 'bi-shield-lock-fill';
-                } else if (data.ultima_acao_mensagem.includes("AVISO")) {
-                    activityType = 'warning';
-                    icon = 'bi-exclamation-triangle-fill';
-                } else if (data.ultimo_rfid && data.ultimo_rfid !== "Nenhum" && data.ultima_acao_mensagem.includes(data.ultimo_rfid)) {
-                    // Se a mensagem principal é sobre a detecção de RFID
-                    activityType = 'info';
-                    icon = 'bi-credit-card-fill';
-                }
-
-                let logDescription = data.ultima_acao_mensagem;
-                if (data.ultimo_rfid && data.ultimo_rfid !== "Nenhum" && !logDescription.includes(data.ultimo_rfid)) {
-                    logDescription += ` (RFID: ${data.ultimo_rfid})`;
-                }
-
-                addActivity(
-                    activityType,
-                    `Status ESP32 (Lab ${currentLaboratory})`,
-                    logDescription,
-                    icon,
-                    { metadata_timestamp_esp: data.timestamp_ultima_acao, description_key: data.ultima_acao_mensagem }
-                );
-            }
-        }
-        syncData();
-
-    } catch (error) {
-        console.error(`Erro ao fazer polling do status do ESP32 para Lab ${labId}:`, error);
         const roomStatusElement = document.getElementById('roomStatus');
-        if (roomStatusElement) {
-            roomStatusElement.textContent = 'Offline ESP';
-            roomStatusElement.className = 'card-text status-offline';
+        const lockBtnElement = document.getElementById('lockBtn');
+
+        if (roomStatusElement && lockBtnElement) {
+          if (isLocked) {
+            roomStatusElement.textContent = 'Trancado';
+            roomStatusElement.className = 'card-text status-locked';
+            lockBtnElement.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Destrancar Laboratório';
+            lockBtnElement.className = 'btn btn-danger';
+          } else {
+            roomStatusElement.textContent = 'Desbloqueado';
+            roomStatusElement.className = 'card-text status-unlocked';
+            lockBtnElement.innerHTML = '<i class="bi bi-unlock-fill me-2"></i>Trancar Laboratório';
+            lockBtnElement.className = 'btn btn-success';
+            todayAccessCount++; // Incrementa o contador de acesso ao desbloquear
+          }
         }
-         // Talvez adicionar uma atividade de log para erro de conexão com ESP
-        // addActivity('danger', 'Erro de Conexão ESP', `Falha ao buscar status do ESP32: ${error.message}`, 'bi-wifi-off');
+        updateStats();
+        updateTeacherInfo();
+        updateScheduleStatus();
+      }
+
+      // Registrar atividade baseada na ultimaAcaoMensagem do Firebase
+      if (ultimaAcaoMensagem && ultimaAcaoMensagem !== "Aguardando status do Arduino...") {
+        const lastActivity = activityData.length > 0 ? activityData[0] : null;
+        if (!lastActivity ||
+            (lastActivity.metadata_timestamp_esp !== timestampUltimaAcao ||
+             lastActivity.description_key !== ultimaAcaoMensagem) ) {
+
+          let activityType = 'info';
+          let icon = 'bi-info-circle-fill';
+
+          if (ultimaAcaoMensagem.includes("Liberado")) {
+            activityType = 'success';
+            icon = !newIsLocked ? 'bi-door-open-fill' : 'bi-unlock-fill'; // Se não está trancado, porta aberta
+          } else if (ultimaAcaoMensagem.includes("Bloqueado")) {
+            activityType = 'danger';
+            icon = newIsLocked ? 'bi-lock-fill' : 'bi-shield-lock-fill'; // Se está trancado, porta fechada
+          } else if (ultimaAcaoMensagem.includes("AVISO")) {
+            activityType = 'warning';
+            icon = 'bi-exclamation-triangle-fill';
+          } else if (ultimoRfid && ultimoRfid !== "Nenhum" && ultimaAcaoMensagem.includes(ultimoRfid)) {
+            activityType = 'info';
+            icon = 'bi-credit-card-fill';
+          }
+
+          let logDescription = ultimaAcaoMensagem;
+          if (ultimoRfid && ultimoRfid !== "Nenhum" && !logDescription.includes(ultimoRfid)) {
+            logDescription += ` (RFID: ${ultimoRfid})`;
+          }
+
+          addActivity(
+            activityType,
+            `Status Firebase (Lab ${currentLaboratory})`,
+            logDescription,
+            icon,
+            { metadata_timestamp_esp: timestampUltimaAcao, description_key: ultimaAcaoMensagem }
+          );
+        }
+      }
+      syncData();
+    } else {
+      console.warn("Dados de status da porta do Firebase inválidos ou incompletos:", data);
+      const roomStatusElement = document.getElementById('roomStatus');
+      if (roomStatusElement) {
+          roomStatusElement.textContent = 'Firebase Desconectado';
+          roomStatusElement.className = 'card-text status-offline';
+      }
     }
+  }, (errorObject) => {
+    console.error("Erro ao ler dados do Firebase:", errorObject.code, errorObject.message);
+    const roomStatusElement = document.getElementById('roomStatus');
+    if (roomStatusElement) {
+        roomStatusElement.textContent = 'Erro Firebase';
+        roomStatusElement.className = 'card-text status-offline';
+    }
+  });
 }
 
 // Activity feed functions
@@ -727,10 +728,37 @@ function removeTeacher() {
 }
 
 // Room control functions
-function toggleLock() {
-  console.warn("toggleLock foi chamado, mas o envio de comando para o ESP32 está desabilitado. O status é atualizado apenas via pollDoorStatus.");
-  addActivity('warning', 'Comando Desabilitado', 'O botão de trancar/destrancar está desabilitado. O status da porta é controlado pelo ESP32.', 'bi-exclamation-triangle-fill');
-  alert("O botão de trancar/destrancar está desabilitado. O status da porta é controlado pelo ESP32.");
+async function toggleLock() {
+  const newLockState = !isLocked; // Inverte o estado atual
+  const labId = currentLaboratory;
+  const doorStatusRef = database.ref(`laboratorios/${labId}/statusPorta`);
+
+  try {
+    // Atualiza o Firebase com o novo estado da porta
+    await doorStatusRef.update({
+      isLocked: newLockState,
+      ultimaAcaoMensagem: newLockState ? "Comando: Bloquear Porta" : "Comando: Liberar Porta",
+      timestampUltimaAcao: Date.now()
+    });
+
+    addActivity(
+      'info',
+      'Comando Enviado',
+      `Comando para ${newLockState ? 'trancar' : 'destrancar'} Laboratório ${labId} enviado via Firebase.`,
+      newLockState ? 'bi-lock-fill' : 'bi-unlock-fill'
+    );
+
+    // A UI será atualizada automaticamente pelo listener do Firebase
+  } catch (error) {
+    console.error("Erro ao enviar comando para o Firebase:", error);
+    addActivity(
+      'danger',
+      'Erro de Comando',
+      `Falha ao enviar comando para o Firebase: ${error.message}`,
+      'bi-exclamation-triangle-fill'
+    );
+    alert(`Erro ao enviar comando para o Firebase: ${error.message}`);
+  }
 }
 
 // Função para lidar com eventos RFID recebidos do ESP32 (mantida para compatibilidade, mas o polling agora é o principal)

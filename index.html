@@ -1,26 +1,35 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Controle Inteligente de Fechadura</title>
-    <meta name="description" content="Painel de Controle RFID para Fechadura Inteligente" />
+    <meta
+      name="description"
+      content="Painel de Controle RFID para Fechadura Inteligente"
+    />
     <meta name="author" content="Sistema IoT de Fechadura Inteligente" />
-    
+
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles/variables.css">
-    <link rel="stylesheet" href="styles/base.css">
-    <link rel="stylesheet" href="styles/navigation.css">
-    <link rel="stylesheet" href="styles/cards.css">
-    <link rel="stylesheet" href="styles/activity.css">
-    <link rel="stylesheet" href="styles/components.css">
-    <link rel="stylesheet" href="styles/tables.css">
-    <link rel="stylesheet" href="styles/animations.css">
-    <link rel="stylesheet" href="styles/responsive.css">
+    <link rel="stylesheet" href="styles/variables.css" />
+    <link rel="stylesheet" href="styles/base.css" />
+    <link rel="stylesheet" href="styles/navigation.css" />
+    <link rel="stylesheet" href="styles/cards.css" />
+    <link rel="stylesheet" href="styles/activity.css" />
+    <link rel="stylesheet" href="styles/components.css" />
+    <link rel="stylesheet" href="styles/tables.css" />
+    <link rel="stylesheet" href="styles/animations.css" />
+    <link rel="stylesheet" href="styles/responsive.css" />
     <style>
       .navbar-brand {
         margin-left: -270px;
@@ -36,7 +45,7 @@
         min-width: 250px; /* Garante uma largura mínima */
         min-height: 38px; /* Garante uma altura mínima (padrão do Bootstrap) */
         border: 1px solid #ced4da; /* Adiciona uma borda para visibilidade */
-        padding: .375rem .75rem; /* Adiciona padding */
+        padding: 0.375rem 0.75rem; /* Adiciona padding */
       }
     </style>
   </head>
@@ -49,7 +58,12 @@
           <i class="bi bi-shield-lock-fill me-2"></i>
           Controle de Fechadura Inteligente
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
@@ -80,7 +94,11 @@
                   <i class="bi bi-building me-2"></i>
                   Selecione o Laboratório:
                 </h5>
-                <select class="form-select w-auto" id="laboratorySelect" onchange="changeLaboratory()">
+                <select
+                  class="form-select w-auto"
+                  id="laboratorySelect"
+                  onchange="changeLaboratory()"
+                >
                   <option value="1">Laboratório 1</option>
                   <option value="2">Laboratório 2</option>
                   <option value="3">Laboratório 3</option>
@@ -108,11 +126,13 @@
               </div>
               <h5 class="card-title">Status do Laboratório</h5>
               <p class="card-text" id="roomStatus">Desbloqueado</p>
-              <small class="text-muted" id="lastAccess">Último acesso: 2 min atrás</small>
+              <small class="text-muted" id="lastAccess"
+                >Último acesso: 2 min atrás</small
+              >
             </div>
           </div>
         </div>
-        
+
         <div class="col-md-3 mb-3">
           <div class="card status-card border-0 shadow-sm h-100">
             <div class="card-body text-center">
@@ -121,11 +141,13 @@
               </div>
               <h5 class="card-title">Professor Responsável</h5>
               <p class="card-text" id="currentTeacher">Não definido</p>
-              <small class="text-muted">ID RFID: <span id="currentRFID">-</span></small>
+              <small class="text-muted"
+                >ID RFID: <span id="currentRFID">-</span></small
+              >
             </div>
           </div>
         </div>
-        
+
         <div class="col-md-3 mb-3">
           <div class="card status-card border-0 shadow-sm h-100">
             <div class="card-body text-center">
@@ -138,7 +160,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="col-md-3 mb-3">
           <div class="card status-card border-0 shadow-sm h-100">
             <div class="card-body text-center">
@@ -158,12 +180,17 @@
         <!-- Activity Feed -->
         <div class="col-lg-8 mb-4">
           <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+            <div
+              class="card-header bg-white border-0 d-flex justify-content-between align-items-center"
+            >
               <h5 class="mb-0">
                 <i class="bi bi-activity me-2"></i>
                 Atividade Recente
               </h5>
-              <button class="btn btn-outline-light btn-sm" onclick="clearActivity()">
+              <button
+                class="btn btn-outline-light btn-sm"
+                onclick="clearActivity()"
+              >
                 <i class="bi bi-trash3"></i> Limpar
               </button>
             </div>
@@ -186,25 +213,29 @@
             </div>
             <div class="card-body">
               <div class="d-grid gap-2">
-                <button class="btn btn-success" onclick="toggleLock()" id="lockBtn">
+                <button
+                  class="btn btn-success"
+                  onclick="toggleLock()"
+                  id="lockBtn"
+                >
                   <i class="bi bi-unlock-fill me-2"></i>
                   Trancar Laboratório
                 </button>
+                <div class="alert alert-info mt-2" role="alert">
+                  <i class="bi bi-info-circle-fill me-2"></i>
+                  Status atual:
+                  <span id="roomStatus" class="fw-bold">Desbloqueado</span>
+                </div>
                 <button class="btn btn-warning" onclick="changeTeacher()">
                   <i class="bi bi-person-plus-fill me-2"></i>
                   Alterar Professor
                 </button>
-                <button class="btn btn-primary" onclick="registerTeacherModal()">
+                <button
+                  class="btn btn-primary"
+                  onclick="registerTeacherModal()"
+                >
                   <i class="bi bi-person-plus-fill me-2"></i>
                   Registrar Professor
-                </button>
-                <button class="btn btn-danger" onclick="removeTeacher()">
-                  <i class="bi bi-person-x-fill me-2"></i>
-                  Remover Professor
-                </button>
-                <button class="btn btn-info" onclick="viewLogs()">
-                  <i class="bi bi-journal-text me-2"></i>
-                  Ver Logs Completos
                 </button>
               </div>
             </div>
@@ -224,7 +255,7 @@
                   <span>Esta Hora</span>
                   <strong id="hourlyAccess">3</strong>
                 </div>
-                <div class="progress mt-1" style="height: 4px;">
+                <div class="progress mt-1" style="height: 4px">
                   <div class="progress-bar" style="width: 30%"></div>
                 </div>
               </div>
@@ -233,7 +264,7 @@
                   <span>Esta Semana</span>
                   <strong id="weeklyAccess">47</strong>
                 </div>
-                <div class="progress mt-1" style="height: 4px;">
+                <div class="progress mt-1" style="height: 4px">
                   <div class="progress-bar bg-success" style="width: 70%"></div>
                 </div>
               </div>
@@ -242,7 +273,7 @@
                   <span>Tentativas Falhadas</span>
                   <strong class="text-danger" id="failedAttempts">2</strong>
                 </div>
-                <div class="progress mt-1" style="height: 4px;">
+                <div class="progress mt-1" style="height: 4px">
                   <div class="progress-bar bg-danger" style="width: 10%"></div>
                 </div>
               </div>
@@ -287,9 +318,24 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Firebase SDK -->
+    <!-- Firebase App (core) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- Firebase Analytics (opcional) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
     <!-- Custom JS -->
-    <script type="module" src="script.js"></script>
+    <script src="script.js"></script>
+    <script type="module">
+      import {
+        toggleLock,
+        changeTeacher,
+        registerTeacherModal,
+      } from "./script.js";
+      window.toggleLock = toggleLock;
+      window.changeTeacher = changeTeacher;
+      window.registerTeacherModal = registerTeacherModal;
+    </script>
 
     <!-- Modal de Alteração de Professor -->
     <div class="modal fade" id="changeTeacherModal" tabindex="-1">
@@ -297,20 +343,33 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Alterar Professor Responsável</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
           </div>
           <div class="modal-body">
             <form id="changeTeacherForm">
               <div class="mb-3">
-                <label for="teacherSelect" class="form-label">Selecione o Professor</label>
-                <select class="form-select" id="teacherSelect" required onchange="updateSubjectOptions()">
+                <label for="teacherSelect" class="form-label"
+                  >Selecione o Professor</label
+                >
+                <select
+                  class="form-select"
+                  id="teacherSelect"
+                  required
+                  onchange="updateSubjectOptions()"
+                >
                   <option value="">Selecione um professor...</option>
                   <option value="ICARO001">Icaro Alvim</option>
                   <option value="MOISES001">Moises Lima</option>
                 </select>
               </div>
               <div class="mb-3">
-                <label for="subjectSelect" class="form-label">Selecione a Matéria</label>
+                <label for="subjectSelect" class="form-label"
+                  >Selecione a Matéria</label
+                >
                 <select class="form-select" id="subjectSelect" required>
                   <option value="">Selecione primeiro um professor...</option>
                 </select>
@@ -347,8 +406,20 @@
             </form>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-primary" onclick="confirmTeacherChange()">Confirmar</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="confirmTeacherChange()"
+            >
+              Confirmar
+            </button>
           </div>
         </div>
       </div>
@@ -360,43 +431,96 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Registrar Novo Professor</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
           </div>
           <div class="modal-body">
             <form id="registerTeacherForm">
               <div class="mb-3">
-                <label for="registerTeacherName" class="form-label">Nome do Professor</label>
-                <input type="text" class="form-control" id="registerTeacherName" placeholder="Qual é o seu nome?" required>
+                <label for="registerTeacherName" class="form-label"
+                  >Nome do Professor</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="registerTeacherName"
+                  placeholder="Qual é o seu nome?"
+                  required
+                />
               </div>
               <div class="mb-3">
-                <label for="registerTeacherCoordinator" class="form-label">Coordenador</label>
-                <input type="text" class="form-control" id="registerTeacherCoordinator" placeholder="Qual é o seu coordenador?" required>
+                <label for="registerTeacherCoordinator" class="form-label"
+                  >Coordenador</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="registerTeacherCoordinator"
+                  placeholder="Qual é o seu coordenador?"
+                  required
+                />
               </div>
               <div class="mb-3">
-                <label for="registerTeacherRFID" class="form-label">ID RFID</label>
-                <input type="text" class="form-control" id="registerTeacherRFID" placeholder="Qual é o seu RFID?" required>
+                <label for="registerTeacherRFID" class="form-label"
+                  >ID RFID</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="registerTeacherRFID"
+                  placeholder="Qual é o seu RFID?"
+                  required
+                />
               </div>
               <div id="subjectsContainer">
                 <div class="mb-3 subject-input-group">
                   <label class="form-label">Matéria</label>
                   <div class="input-group">
-                    <input type="text" class="form-control subject-input" placeholder="Qual matéria você leciona?" required>
-                    <button type="button" class="btn btn-outline-danger remove-subject" style="display: none;">
+                    <input
+                      type="text"
+                      class="form-control subject-input"
+                      placeholder="Qual matéria você leciona?"
+                      required
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger remove-subject"
+                      style="display: none"
+                    >
                       <i class="bi bi-trash"></i>
                     </button>
                   </div>
                 </div>
               </div>
               <div class="mb-3">
-                <button type="button" class="btn btn-outline-primary" id="addSubjectBtn">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary"
+                  id="addSubjectBtn"
+                >
                   <i class="bi bi-plus-circle"></i> Adicionar Outra Matéria
                 </button>
               </div>
             </form>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-primary" onclick="confirmRegisterTeacher()">Registrar</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="confirmRegisterTeacher()"
+            >
+              Registrar
+            </button>
           </div>
         </div>
       </div>

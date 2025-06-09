@@ -5,7 +5,7 @@
   border-radius: 12px;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   border: none;
   position: relative;
   overflow: hidden;
@@ -13,7 +13,7 @@
 
 .btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 .btn-success {
@@ -56,7 +56,7 @@
   border-radius: 50px;
   font-weight: 600;
   padding: 0.6em 1.2em;
-  text-shadow: 0 0 5px rgba(0,0,0,0.3);
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
 /* Progress bars */
@@ -78,4 +78,32 @@
 
 .progress-bar.bg-danger {
   background: var(--gradient-danger);
+}
+
+.status-locked {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.status-unlocked {
+  color: #198754;
+  font-weight: bold;
+}
+
+#lockBtn {
+  transition: all 0.3s ease;
+}
+
+#lockBtn:hover {
+  transform: scale(1.05);
+}
+
+#lockBtn.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+#lockBtn.btn-success {
+  background-color: #198754;
+  border-color: #198754;
 }

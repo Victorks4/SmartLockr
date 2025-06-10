@@ -11,6 +11,10 @@
     "bootstrap-icons": "^1.11.0"
   },
   "devDependencies": {
-    "live-server": "^1.2.2"
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "live-server": "^1.2.2",
+    "tailwindcss": "^4.1.8",
+    "tailwindcss-animate": "^1.0.7"
   }
 }
